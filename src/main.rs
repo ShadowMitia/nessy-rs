@@ -69,23 +69,24 @@ mod rp2a03 {
 
         pub enum Instructions {
             SEI,
-            CLD
+            CLD,
+            LDA,
         }
 
         pub fn match_instruction(opcode: u8) -> (Instructions, AddressingMode) {
             match opcode {
-                // // LDA
-                // 0xAD => (Instruction::LDA, AddressingMode::Absolute),
-                // 0xBD => (Instruction::LDA, AddressingMode::AbsoluteIndirectWithX),
-                // 0xB9 => (Instruction::LDA, AddressingMode::AbsoluteIndirectWithY),
-                // 0xA9 => (Instruction::LDA, AddressingMode::Immediate),
-                // 0xA5 => (Instruction::LDA, AddressingMode::ZeroPage),
-                // 0xA1 => (Instruction::LDA, AddressingMode::ZeroPageIndexedIndirect),
-                // 0xB5 => (Instruction::LDA, AddressingMode::ZeroPageIndexedWithX),
-                // 0xB1 => (
-                //     Instruction::LDA,
-                //     AddressingMode::ZeroPageIndirectIndexedWithY,
-                // ),
+                // LDA
+                0xAD => (Instructions::LDA, AddressingMode::Absolute),
+                0xBD => (Instructions::LDA, AddressingMode::AbsoluteIndirectWithX),
+                0xB9 => (Instructions::LDA, AddressingMode::AbsoluteIndirectWithY),
+                0xA9 => (Instructions::LDA, AddressingMode::Immediate),
+                0xA5 => (Instructions::LDA, AddressingMode::ZeroPage),
+                0xA1 => (Instructions::LDA, AddressingMode::ZeroPageIndexedIndirect),
+                0xB5 => (Instructions::LDA, AddressingMode::ZeroPageIndexedWithX),
+                0xB1 => (
+                    Instructions::LDA,
+                    AddressingMode::ZeroPageIndirectIndexedWithY,
+                ),
                 // SEI
                 0x78 => (Instructions::SEI, AddressingMode::Implied),
                 0xd8 => (Instructions::CLD, AddressingMode::Implied),
@@ -115,10 +116,38 @@ mod rp2a03 {
             cld(&mut registers);
             assert_eq!(registers.status, 0b00000000);
         }
+
+        pub fn lda(registers: &mut Registers, operand: u8) {
+            registers.a = operand;
+            registers.status = if operand == 0 {
+                registers.status | 0b00000010
+            } else {
+                registers.status & 0b11111101
+            };
+            registers.status = if operand >= 0x80 {
+                registers.status | 0b10000000
+            } else {
+                registers.status & 0b01111111
+            };
+        }
+
+        #[test]
+        fn lda_test() {
+            let mut registers = Registers::new();
+            lda(&mut registers, 0x42);
+            assert_eq!(registers.a, 0x42);
+            lda(&mut registers, 0x0);
+            assert_eq!(registers.a, 0x0);
+            assert_eq!(registers.status & 0b00000010, 0b00000010);
+            lda(&mut registers, 0x80);
+            assert_eq!(registers.a, 0x80);
+            assert_eq!(registers.status & 0b10000000, 0b10000000);
+        }
+
         /**
         Applies addressing mode rules to operands and gives out 16-bit results
          */
-        fn apply_addressing(
+        pub fn apply_addressing(
             memory: &[u8],
             registers: &Registers,
             adressing_mode: AddressingMode,
@@ -332,6 +361,8 @@ mod rp2a03 {
 
 use rp2a03::*;
 
+use crate::rp2a03::Instructions::apply_addressing;
+
 fn decode(memory: &mut [u8], registers: &mut Registers) {}
 
 fn address_from_bytes(low_byte: u8, high_byte: u8) -> u16 {
@@ -406,11 +437,25 @@ fn main() {
             Instructions::Instructions::SEI => {
                 Instructions::sei(&mut registers);
                 registers.pc += 1;
-            },
+            }
             Instructions::Instructions::CLD => {
                 Instructions::cld(&mut registers);
                 registers.pc += 1;
-            },
+            }
+            Instructions::Instructions::LDA => {
+                let low_byte = memory[registers.pc as usize];
+                let high_byte = memory[registers.pc as usize];
+                let k = apply_addressing(
+                    &memory,
+                    &registers,
+                    addressing_mode,
+                    Some(low_byte),
+                    Some(high_byte),
+                );
+
+                Instructions::lda(&mut registers, (k.unwrap() & 0x00FF) as u8);
+                registers.pc += 1;
+            }
         }
     }
 }
