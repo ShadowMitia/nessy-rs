@@ -69,6 +69,7 @@ mod rp2a03 {
 
         pub enum Instructions {
             SEI,
+            CLD
         }
 
         pub fn match_instruction(opcode: u8) -> (Instructions, AddressingMode) {
@@ -86,7 +87,8 @@ mod rp2a03 {
                 //     AddressingMode::ZeroPageIndirectIndexedWithY,
                 // ),
                 // SEI
-                0x78 => (Instructions::SEI, AddressingMode::Immediate),
+                0x78 => (Instructions::SEI, AddressingMode::Implied),
+                0xd8 => (Instructions::CLD, AddressingMode::Implied),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -100,6 +102,18 @@ mod rp2a03 {
             let mut registers = Registers::new();
             sei(&mut registers);
             assert_eq!(registers.status, 0b00000100);
+        }
+
+        pub fn cld(registers: &mut Registers) {
+            registers.status &= 0b11110111;
+        }
+
+        #[test]
+        fn cld_test() {
+            let mut registers = Registers::new();
+            registers.status |= 0b00001000;
+            cld(&mut registers);
+            assert_eq!(registers.status, 0b00000000);
         }
         /**
         Applies addressing mode rules to operands and gives out 16-bit results
@@ -316,11 +330,7 @@ mod rp2a03 {
     }
 }
 
-use std::mem;
-
 use rp2a03::*;
-
-use crate::rp2a03::Instructions::{match_instruction, sei};
 
 fn decode(memory: &mut [u8], registers: &mut Registers) {}
 
@@ -391,10 +401,14 @@ fn main() {
 
     loop {
         let byte = memory[registers.pc as usize];
-        let (instruction, addressing_mode) = match_instruction(byte);
+        let (instruction, addressing_mode) = Instructions::match_instruction(byte);
         match instruction {
             Instructions::Instructions::SEI => {
-                sei(&mut registers);
+                Instructions::sei(&mut registers);
+                registers.pc += 1;
+            },
+            Instructions::Instructions::CLD => {
+                Instructions::cld(&mut registers);
                 registers.pc += 1;
             },
         }
