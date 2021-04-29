@@ -43,6 +43,26 @@ mod rp2a03 {
     pub struct Memory {
         pub memory: Vec<u8>,
         pub ppu: Vec<u8>,
+        stack_pointer: u16,
+    }
+
+    impl Memory {
+        pub fn new() -> Self {
+            let mut memory = Vec::new();
+            memory.resize_with(0x10000, || 0);
+            let mut ppu = Vec::new();
+
+            Self {
+                memory,
+                ppu,
+                stack_pointer: 0x01FF,
+            }
+        }
+
+        pub fn stack_push(&mut self, val: u8) {
+            self.memory[self.stack_pointer as usize] = val;
+            self.stack_pointer -= 1;
+        }
     }
 
     pub enum AddressingMode {
@@ -63,6 +83,8 @@ mod rp2a03 {
 
     pub mod Instructions {
 
+        use std::mem;
+
         use crate::address_from_bytes;
 
         use super::*;
@@ -71,6 +93,7 @@ mod rp2a03 {
             SEI,
             CLD,
             LDA,
+            BRK
         }
 
         pub fn match_instruction(opcode: u8) -> (Instructions, AddressingMode) {
@@ -90,6 +113,9 @@ mod rp2a03 {
                 // SEI
                 0x78 => (Instructions::SEI, AddressingMode::Implied),
                 0xd8 => (Instructions::CLD, AddressingMode::Implied),
+                // BRK
+                0x0 => (Instructions::BRK, AddressingMode::Implied),
+
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -144,16 +170,37 @@ mod rp2a03 {
             assert_eq!(registers.status & 0b10000000, 0b10000000);
         }
 
+        pub fn brk(registers: &mut Registers, memory: &mut Memory) {
+            registers.pc += 2;
+            memory.stack_push(((registers.pc >> 8) & 0xFF) as u8);
+            memory.stack_push((registers.pc & 0xFF) as u8);
+            registers.status |= 0b00010100; // Enable B and I registers
+            memory.stack_push(registers.status);
+            registers.pc = address_from_bytes(memory.memory[0xFFFE], memory.memory[0xFFFF])
+        }
+
+        #[test]
+        fn brk_test() {
+            let mut registers = Registers::new();
+            let mut memory = Memory::new();
+
+            brk(&mut registers, &mut memory);
+            assert_eq!(registers.status, 0b00010100);
+            assert_eq!(memory.memory[0x01FF], 0);
+            assert_eq!(memory.memory[0x01FE], 2);
+        }
+
         /**
         Applies addressing mode rules to operands and gives out 16-bit results
          */
         pub fn apply_addressing(
-            memory: &[u8],
+            memory: &Memory,
             registers: &Registers,
             adressing_mode: AddressingMode,
             low_byte: Option<u8>,
             high_byte: Option<u8>,
         ) -> Option<u16> {
+            let memory = &memory.memory;
             match adressing_mode {
                 AddressingMode::Accumulator => None,
                 AddressingMode::Implied => None,
@@ -213,8 +260,7 @@ mod rp2a03 {
 
         #[test]
         fn apply_addressing_test() {
-            let mut memory = Vec::new();
-            memory.resize_with(0x10000, || 0);
+            let mut memory = Memory::new();
 
             let mut registers = Registers::new();
 
@@ -238,7 +284,7 @@ mod rp2a03 {
             assert_eq!(res, Some(0x201));
 
             // ABSOLUTE
-            memory[0x201] = 42;
+            memory.memory[0x201] = 42;
             let res = apply_addressing(
                 &memory,
                 &registers,
@@ -249,7 +295,7 @@ mod rp2a03 {
             assert_eq!(res, Some(42));
 
             // ZERO PAGE
-            memory[0x0] = 43;
+            memory.memory[0x0] = 43;
             let res = apply_addressing(
                 &memory,
                 &registers,
@@ -270,8 +316,8 @@ mod rp2a03 {
             assert_eq!(res, Some(0x42));
 
             // AbsoluteIndirect
-            memory[0xA001] = 0xFF;
-            memory[0xA002] = 0x00;
+            memory.memory[0xA001] = 0xFF;
+            memory.memory[0xA002] = 0x00;
             let res = apply_addressing(
                 &memory,
                 &registers,
@@ -282,7 +328,7 @@ mod rp2a03 {
             assert_eq!(res, Some(0x00FF));
 
             // AbsoluteIndirectWithX
-            memory[0xC003] = 0x5A;
+            memory.memory[0xC003] = 0x5A;
             registers.x = 0x2;
             let res = apply_addressing(
                 &memory,
@@ -294,7 +340,7 @@ mod rp2a03 {
             assert_eq!(res, Some(0x5A));
 
             // AbsoluteIndirectWithY
-            memory[0xF004] = 0xEF;
+            memory.memory[0xF004] = 0xEF;
             registers.y = 0x3;
             let res = apply_addressing(
                 &memory,
@@ -306,7 +352,7 @@ mod rp2a03 {
             assert_eq!(res, Some(0xEF));
 
             // ZeroPageIndexedWithX
-            memory[0x3] = 0xA5;
+            memory.memory[0x3] = 0xA5;
             registers.x = 0x2;
             let res = apply_addressing(
                 &memory,
@@ -318,7 +364,7 @@ mod rp2a03 {
             assert_eq!(res, Some(0xA5));
 
             // ZeroPageIndexedWithY
-            memory[0x4] = 0xE3;
+            memory.memory[0x4] = 0xE3;
             registers.y = 3;
             let res = apply_addressing(
                 &memory,
@@ -330,8 +376,8 @@ mod rp2a03 {
             assert_eq!(res, Some(0xE3));
 
             // Zero Page Indexed Indirect
-            memory[0x17] = 0x10;
-            memory[0x18] = 0xD0;
+            memory.memory[0x17] = 0x10;
+            memory.memory[0x18] = 0xD0;
             registers.x = 2;
             let res = apply_addressing(
                 &memory,
@@ -343,9 +389,9 @@ mod rp2a03 {
             assert_eq!(res, Some(0xD010));
 
             // Zero Page Indexed Indirect with Y
-            memory[0x002A] = 0x35;
-            memory[0x002B] = 0xC2;
-            memory[0xC238] = 0x2F;
+            memory.memory[0x002A] = 0x35;
+            memory.memory[0x002B] = 0xC2;
+            memory.memory[0xC238] = 0x2F;
             registers.y = 0x3;
             let res = apply_addressing(
                 &memory,
@@ -383,8 +429,7 @@ fn main() {
     println!("Nessy 🐉!");
 
     // Initialise memory
-    let mut memory = Vec::new();
-    memory.resize_with(0x10000, || 0);
+    let mut memory = Memory::new();
 
     // Load ROM and decode header
     let rom =
@@ -407,18 +452,18 @@ fn main() {
 
     // Load up memory
     for index in 0..(0x10000 - PRGROM_ADDRESS) {
-        memory[(PRGROM_ADDRESS + index) as usize] = rom[index as usize];
+        memory.memory[(PRGROM_ADDRESS + index) as usize] = rom[index as usize];
     }
 
     let bank_seven = 16 + 7 * 16384;
 
     for index in 0..16384 {
-        memory[(0xC000 + index) as usize] = rom[(bank_seven + index) as usize];
+        memory.memory[(0xC000 + index) as usize] = rom[(bank_seven + index) as usize];
     }
 
     // Get the RESET vector to find start of the game
-    let reset_vector_low = memory[0xFFFC];
-    let reset_vector_high = memory[0xFFFD];
+    let reset_vector_low = memory.memory[0xFFFC];
+    let reset_vector_high = memory.memory[0xFFFD];
 
     println!("hi {:x} lo {:x}", reset_vector_high, reset_vector_low);
 
@@ -431,7 +476,7 @@ fn main() {
     registers.pc = reset_vector;
 
     loop {
-        let byte = memory[registers.pc as usize];
+        let byte = memory.memory[registers.pc as usize];
         let (instruction, addressing_mode) = Instructions::match_instruction(byte);
         match instruction {
             Instructions::Instructions::SEI => {
@@ -443,8 +488,8 @@ fn main() {
                 registers.pc += 1;
             }
             Instructions::Instructions::LDA => {
-                let low_byte = memory[registers.pc as usize];
-                let high_byte = memory[registers.pc as usize];
+                let low_byte = memory.memory[registers.pc as usize];
+                let high_byte = memory.memory[registers.pc as usize];
                 let k = apply_addressing(
                     &memory,
                     &registers,
@@ -454,6 +499,10 @@ fn main() {
                 );
 
                 Instructions::lda(&mut registers, (k.unwrap() & 0x00FF) as u8);
+                registers.pc += 1;
+            }
+            Instructions::Instructions::BRK => {
+                Instructions::brk(&mut registers, &mut memory);
                 registers.pc += 1;
             }
         }
