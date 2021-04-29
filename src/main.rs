@@ -11,16 +11,16 @@ mod rp2a03 {
     status hold processore flag bits (7 flags)
     */
     pub struct Registers {
-        a: u8,
-        x: u8,
-        y: u8,
-        s: u8,
-        pc: u16,
-        status: u8,
+        pub a: u8,
+        pub x: u8,
+        pub y: u8,
+        pub s: u8,
+        pub pc: u16,
+        pub status: u8,
     }
 
     impl Registers {
-        fn new() -> Self {
+        pub fn new() -> Self {
             Self {
                 a: 0,
                 x: 0,
@@ -41,7 +41,8 @@ mod rp2a03 {
 
     */
     pub struct Memory {
-        memory: Vec<u8>,
+        pub memory: Vec<u8>,
+        pub ppu: Vec<u8>,
     }
 
     pub enum AddressingMode {
@@ -60,12 +61,46 @@ mod rp2a03 {
         ZeroPageIndirectIndexedWithY,
     }
 
-    mod instructions {
+    pub mod Instructions {
 
         use crate::address_from_bytes;
 
         use super::*;
 
+        pub enum Instructions {
+            SEI,
+        }
+
+        pub fn match_instruction(opcode: u8) -> (Instructions, AddressingMode) {
+            match opcode {
+                // // LDA
+                // 0xAD => (Instruction::LDA, AddressingMode::Absolute),
+                // 0xBD => (Instruction::LDA, AddressingMode::AbsoluteIndirectWithX),
+                // 0xB9 => (Instruction::LDA, AddressingMode::AbsoluteIndirectWithY),
+                // 0xA9 => (Instruction::LDA, AddressingMode::Immediate),
+                // 0xA5 => (Instruction::LDA, AddressingMode::ZeroPage),
+                // 0xA1 => (Instruction::LDA, AddressingMode::ZeroPageIndexedIndirect),
+                // 0xB5 => (Instruction::LDA, AddressingMode::ZeroPageIndexedWithX),
+                // 0xB1 => (
+                //     Instruction::LDA,
+                //     AddressingMode::ZeroPageIndirectIndexedWithY,
+                // ),
+                // SEI
+                0x78 => (Instructions::SEI, AddressingMode::Immediate),
+                _ => panic!("Unknown opcode {:#x}", opcode),
+            }
+        }
+
+        pub fn sei(registers: &mut Registers) {
+            registers.status |= 0b00000100;
+        }
+
+        #[test]
+        fn sei_test() {
+            let mut registers = Registers::new();
+            sei(&mut registers);
+            assert_eq!(registers.status, 0b00000100);
+        }
         /**
         Applies addressing mode rules to operands and gives out 16-bit results
          */
@@ -278,12 +313,14 @@ mod rp2a03 {
             );
             assert_eq!(res, Some(0x2F));
         }
-
-        fn ADC() {}
     }
 }
 
+use std::mem;
+
 use rp2a03::*;
+
+use crate::rp2a03::Instructions::{match_instruction, sei};
 
 fn decode(memory: &mut [u8], registers: &mut Registers) {}
 
@@ -291,9 +328,24 @@ fn address_from_bytes(low_byte: u8, high_byte: u8) -> u16 {
     ((high_byte as u16) << 8) | low_byte as u16
 }
 
+const ZEROPAGE_ADDRESS: u32 = 0x0;
+const STACK_ADDRESS: u32 = 0x0100;
+const RAM_ADDRESS: u32 = 0x0200;
+const EXPANSION_ROM_ADDRESS: u32 = 0x4020;
+const SRAM_ADDRESS: u32 = 0x6000;
+const PRGROM_ADDRESS: u32 = 0x8000;
+const NMI_VECTOR_ADDRESS: u32 = 0xFFFA;
+const RESET_VECTOR_ADDRESS: u32 = 0xFFFC;
+const BREAK_VECTOR_ADDDRESS: u32 = 0xFFFE;
+
 fn main() {
     println!("Nessy 🐉!");
 
+    // Initialise memory
+    let mut memory = Vec::new();
+    memory.resize_with(0x10000, || 0);
+
+    // Load ROM and decode header
     let rom =
         include_bytes!("/home/dimitri/development/nessy-rs/Legend of Zelda, The (Europe).nes");
 
@@ -303,14 +355,7 @@ fn main() {
     );
 
     let num_prgrom = rom[4];
-    let num_chrrom = rom[5];
-
-    let reset_vector_low = rom[0xFFFC];
-    let reset_vector_high = rom[0xFFFD];
-
-    let reset_vector = address_from_bytes(reset_vector_low, reset_vector_high);
-
-    println!("Reset vector {}", reset_vector);
+    let num_chrrom = if rom[5] == 0 { 1 } else { rom[5] };
 
     println!(
         "Num of 16k bytes PRG ROM {} ({}k bytes)\nNum of 8k CHR ROM {}",
@@ -319,6 +364,39 @@ fn main() {
         num_chrrom
     );
 
-    let mut memory = Vec::new();
-    memory.resize_with(0x10000, || 0);
+    // Load up memory
+    for index in 0..(0x10000 - PRGROM_ADDRESS) {
+        memory[(PRGROM_ADDRESS + index) as usize] = rom[index as usize];
+    }
+
+    let bank_seven = 16 + 7 * 16384;
+
+    for index in 0..16384 {
+        memory[(0xC000 + index) as usize] = rom[(bank_seven + index) as usize];
+    }
+
+    // Get the RESET vector to find start of the game
+    let reset_vector_low = memory[0xFFFC];
+    let reset_vector_high = memory[0xFFFD];
+
+    println!("hi {:x} lo {:x}", reset_vector_high, reset_vector_low);
+
+    let reset_vector = address_from_bytes(reset_vector_low, reset_vector_high);
+
+    println!("Reset vector {:x}", reset_vector);
+
+    // Set up registers
+    let mut registers = Registers::new();
+    registers.pc = reset_vector;
+
+    loop {
+        let byte = memory[registers.pc as usize];
+        let (instruction, addressing_mode) = match_instruction(byte);
+        match instruction {
+            Instructions::Instructions::SEI => {
+                sei(&mut registers);
+                registers.pc += 1;
+            },
+        }
+    }
 }
