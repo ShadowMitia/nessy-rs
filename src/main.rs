@@ -96,6 +96,7 @@ mod rp2a03 {
             BRK,
             STA,
             INC,
+            LDX,
         }
 
         pub fn match_instruction(opcode: u8) -> (Instructions, AddressingMode) {
@@ -133,6 +134,12 @@ mod rp2a03 {
                 0xFE => (Instructions::INC, AddressingMode::AbsoluteIndirectWithX),
                 0xE6 => (Instructions::INC, AddressingMode::ZeroPage),
                 0xF6 => (Instructions::INC, AddressingMode::ZeroPageIndexedWithX),
+                // LDX
+                0xAE => (Instructions::LDX, AddressingMode::Absolute),
+                0xBE => (Instructions::LDX, AddressingMode::AbsoluteIndirectWithY),
+                0xA2 => (Instructions::LDX, AddressingMode::Immediate),
+                0xA6 => (Instructions::LDX, AddressingMode::ZeroPage),
+                0xB6 => (Instructions::LDX, AddressingMode::ZeroPageIndexedWithY),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -245,6 +252,33 @@ mod rp2a03 {
             memory.memory[0x0] = 41;
             inc(&mut registers, &mut memory, 0x0);
             assert_eq!(memory.memory[0x0], 42);
+        }
+
+        pub fn ldx(registers: &mut Registers, operand: u8) {
+            registers.x = operand;
+            registers.status = if operand == 0 {
+                registers.status | 0b00000010
+            } else {
+                registers.status & 0b11111101
+            };
+            registers.status = if operand >= 0x80 {
+                registers.status | 0b10000000
+            } else {
+                registers.status & 0b01111111
+            };
+        }
+
+        #[test]
+        fn ldx_test() {
+            let mut registers = Registers::new();
+            ldx(&mut registers, 0x42);
+            assert_eq!(registers.x, 0x42);
+            ldx(&mut registers, 0x0);
+            assert_eq!(registers.x, 0x0);
+            assert_eq!(registers.status & 0b00000010, 0b00000010);
+            ldx(&mut registers, 0x80);
+            assert_eq!(registers.x, 0x80);
+            assert_eq!(registers.status & 0b10000000, 0b10000000);
         }
 
         /**
@@ -614,6 +648,20 @@ fn main() {
                 )
                 .unwrap();
                 Instructions::inc(&mut registers, &mut memory, addr);
+                registers.pc += num_operands;
+            }
+            Instructions::Instructions::LDX => {
+                let (low_byte, high_byte) = get_operands(&registers, &memory);
+                let addr = apply_addressing(
+                    &memory,
+                    &registers,
+                    addressing_mode,
+                    Some(low_byte),
+                    Some(high_byte),
+                )
+                .unwrap();
+
+                Instructions::ldx(&mut registers, (addr & 0x00FF) as u8);
                 registers.pc += num_operands;
             }
         }
