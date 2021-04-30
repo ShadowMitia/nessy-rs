@@ -83,7 +83,7 @@ mod rp2a03 {
 
     pub mod Instructions {
 
-        use std::mem;
+        use std::{mem, ops::Add};
 
         use crate::address_from_bytes;
 
@@ -95,6 +95,7 @@ mod rp2a03 {
             LDA,
             BRK,
             STA,
+            INC,
         }
 
         pub fn match_instruction(opcode: u8) -> (Instructions, AddressingMode) {
@@ -127,6 +128,11 @@ mod rp2a03 {
                     Instructions::STA,
                     AddressingMode::ZeroPageIndirectIndexedWithY,
                 ),
+                // INC
+                0xEE => (Instructions::INC, AddressingMode::Absolute),
+                0xFE => (Instructions::INC, AddressingMode::AbsoluteIndirectWithX),
+                0xE6 => (Instructions::INC, AddressingMode::ZeroPage),
+                0xF6 => (Instructions::INC, AddressingMode::ZeroPageIndexedWithX),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -212,6 +218,33 @@ mod rp2a03 {
             registers.a = 0x42;
             sta(&mut registers, &mut memory, 0x12);
             assert_eq!(memory.memory[0x12], 0x42);
+        }
+
+        pub fn inc(registers: &mut Registers, memory: &mut Memory, addr: u16) {
+            memory.memory[addr as usize] += 1;
+
+            let operand = memory.memory[addr as usize];
+
+            registers.status = if operand == 0 {
+                registers.status | 0b00000010
+            } else {
+                registers.status & 0b11111101
+            };
+            registers.status = if operand >= 0x80 {
+                registers.status | 0b10000000
+            } else {
+                registers.status & 0b01111111
+            };
+        }
+
+        #[test]
+        fn inc_test() {
+            let mut registers = Registers::new();
+            let mut memory = Memory::new();
+
+            memory.memory[0x0] = 41;
+            inc(&mut registers, &mut memory, 0x0);
+            assert_eq!(memory.memory[0x0], 42);
         }
 
         /**
@@ -467,10 +500,7 @@ const NMI_VECTOR_ADDRESS: u32 = 0xFFFA;
 const RESET_VECTOR_ADDRESS: u32 = 0xFFFC;
 const BREAK_VECTOR_ADDDRESS: u32 = 0xFFFE;
 
-fn get_operands(
-    registers: &Registers,
-    memory: &Memory,
-) -> (u8, u8) {
+fn get_operands(registers: &Registers, memory: &Memory) -> (u8, u8) {
     let low = memory.memory[(registers.pc + 1) as usize];
     let high = memory.memory[(registers.pc + 2) as usize];
     (low, high)
@@ -536,10 +566,10 @@ fn main() {
             Instructions::Instructions::SEI => {
                 Instructions::sei(&mut registers);
                 registers.pc += num_operands;
-
             }
             Instructions::Instructions::CLD => {
-                Instructions::cld(&mut registers);                registers.pc += num_operands;
+                Instructions::cld(&mut registers);
+                registers.pc += num_operands;
                 registers.pc += num_operands;
             }
             Instructions::Instructions::LDA => {
@@ -550,11 +580,11 @@ fn main() {
                     addressing_mode,
                     Some(low_byte),
                     Some(high_byte),
-                ).unwrap();
+                )
+                .unwrap();
 
                 Instructions::lda(&mut registers, (addr & 0x00FF) as u8);
                 registers.pc += num_operands;
-
             }
             Instructions::Instructions::BRK => {
                 Instructions::brk(&mut registers, &mut memory);
@@ -569,8 +599,22 @@ fn main() {
                     addressing_mode,
                     Some(low_byte),
                     Some(high_byte),
-                ).unwrap();
+                )
+                .unwrap();
                 Instructions::sta(&mut registers, &mut memory, addr);
+                registers.pc += num_operands;
+            }
+            Instructions::Instructions::INC => {
+                let (low_byte, high_byte) = get_operands(&registers, &memory);
+                let addr = apply_addressing(
+                    &memory,
+                    &registers,
+                    addressing_mode,
+                    Some(low_byte),
+                    Some(high_byte),
+                )
+                .unwrap();
+                Instructions::inc(&mut registers, &mut memory, addr);
                 registers.pc += num_operands;
             }
         }
