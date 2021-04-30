@@ -570,7 +570,6 @@ fn main() {
             Instructions::Instructions::CLD => {
                 Instructions::cld(&mut registers);
                 registers.pc += num_operands;
-                registers.pc += num_operands;
             }
             Instructions::Instructions::LDA => {
                 let (low_byte, high_byte) = get_operands(&registers, &memory);
