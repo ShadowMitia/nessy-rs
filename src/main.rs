@@ -145,8 +145,10 @@ mod rp2a03 {
                 // TXS
                 0x9a => (Instructions::TXS, AddressingMode::Implied),
                 // AND
-                0x2E => (Instructions::AND, AddressingMode::Absolute),
-                0x3E => (Instructions::AND, AddressingMode::AbsoluteIndirectWithX),
+                0x2D => (Instructions::AND, AddressingMode::Absolute),
+                0x3D => (Instructions::AND, AddressingMode::AbsoluteIndirectWithX),
+                0x39 => (Instructions::AND, AddressingMode::AbsoluteIndirectWithY),
+                0x29 => (Instructions::AND, AddressingMode::Immediate),
                 0x2A => (Instructions::AND, AddressingMode::Accumulator),
                 0x26 => (Instructions::AND, AddressingMode::ZeroPage),
                 0x36 => (Instructions::AND, AddressingMode::ZeroPageIndexedWithX),
@@ -306,8 +308,8 @@ mod rp2a03 {
             assert_eq!(memory.memory[0x01FF], 42);
         }
 
-        pub fn and(registers: &mut Registers, memory: &mut Memory, addr: u16) {
-            registers.a &= memory.memory[addr as usize];
+        pub fn and(registers: &mut Registers, value: u8) {
+            registers.a &= value;
         }
 
         #[test]
@@ -317,12 +319,12 @@ mod rp2a03 {
 
             registers.a = 0b00000001;
             memory.memory[0x1] = 0b00000001;
-            and(&mut registers, &mut memory, 0x1);
+            and(&mut registers, 0x1);
             assert_eq!(registers.a, 1);
 
             registers.a = 0b00000000;
             memory.memory[0x1] = 0b00000001;
-            and(&mut registers, &mut memory, 0x1);
+            and(&mut registers, 0x1);
             assert_eq!(registers.a, 0);
         }
 
@@ -340,9 +342,7 @@ mod rp2a03 {
             match adressing_mode {
                 AddressingMode::Accumulator => None,
                 AddressingMode::Implied => None,
-                AddressingMode::Immediate => {
-                    Some(address_from_bytes(low_byte.unwrap(), high_byte.unwrap()))
-                }
+                AddressingMode::Immediate => Some(low_byte.unwrap().into()),
                 AddressingMode::Absolute => {
                     let addr = address_from_bytes(low_byte.unwrap(), high_byte.unwrap());
                     Some(*memory.get(addr as usize).unwrap() as u16)
@@ -433,9 +433,9 @@ mod rp2a03 {
                 &registers,
                 AddressingMode::Immediate,
                 Some(0x1),
-                Some(0x2),
+                None
             );
-            assert_eq!(res, Some(0x201));
+            assert_eq!(res, Some(0x1));
 
             // ABSOLUTE
             memory.memory[0x201] = 42;
@@ -661,7 +661,7 @@ fn main() {
                 )
                 .unwrap();
 
-                Instructions::lda(&mut registers, (addr & 0x00FF) as u8);
+                Instructions::lda(&mut registers, addr as u8);
                 registers.pc += num_operands;
             }
             Instructions::Instructions::BRK => {
@@ -706,7 +706,8 @@ fn main() {
                 )
                 .unwrap();
 
-                Instructions::ldx(&mut registers, (addr & 0x00FF) as u8);
+                Instructions::ldx(&mut registers, addr as u8);
+
                 registers.pc += num_operands;
             }
             Instructions::Instructions::TXS => {
@@ -724,7 +725,7 @@ fn main() {
                 )
                 .unwrap();
 
-                and(&mut registers, &mut memory, addr);
+                and(&mut registers, memory.memory[addr as usize]);
                 registers.pc += num_operands;
             }
         }
