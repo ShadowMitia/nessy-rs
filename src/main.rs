@@ -98,6 +98,7 @@ mod rp2a03 {
             INC,
             LDX,
             TXS,
+            AND,
         }
 
         pub fn match_instruction(opcode: u8) -> (Instructions, AddressingMode) {
@@ -143,6 +144,12 @@ mod rp2a03 {
                 0xB6 => (Instructions::LDX, AddressingMode::ZeroPageIndexedWithY),
                 // TXS
                 0x9a => (Instructions::TXS, AddressingMode::Implied),
+                // AND
+                0x2E => (Instructions::AND, AddressingMode::Absolute),
+                0x3E => (Instructions::AND, AddressingMode::AbsoluteIndirectWithX),
+                0x2A => (Instructions::AND, AddressingMode::Accumulator),
+                0x26 => (Instructions::AND, AddressingMode::ZeroPage),
+                0x36 => (Instructions::AND, AddressingMode::ZeroPageIndexedWithX),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -297,6 +304,26 @@ mod rp2a03 {
             txs(&mut registers, &mut memory);
 
             assert_eq!(memory.memory[0x01FF], 42);
+        }
+
+        pub fn and(registers: &mut Registers, memory: &mut Memory, addr: u16) {
+            registers.a &= memory.memory[addr as usize];
+        }
+
+        #[test]
+        fn and_test() {
+            let mut registers = Registers::new();
+            let mut memory = Memory::new();
+
+            registers.a = 0b00000001;
+            memory.memory[0x1] = 0b00000001;
+            and(&mut registers, &mut memory, 0x1);
+            assert_eq!(registers.a, 1);
+
+            registers.a = 0b00000000;
+            memory.memory[0x1] = 0b00000001;
+            and(&mut registers, &mut memory, 0x1);
+            assert_eq!(registers.a, 0);
         }
 
         /**
@@ -534,7 +561,7 @@ mod rp2a03 {
 
 use rp2a03::{AddressingMode, Instructions::num_operands_from_addressing, Registers, *};
 
-use crate::rp2a03::Instructions::{apply_addressing, txs};
+use crate::rp2a03::Instructions::{and, apply_addressing, txs};
 
 fn decode(memory: &mut [u8], registers: &mut Registers) {}
 
@@ -684,6 +711,20 @@ fn main() {
             }
             Instructions::Instructions::TXS => {
                 txs(&mut registers, &mut memory);
+                registers.pc += num_operands;
+            }
+            Instructions::Instructions::AND => {
+                let (low_byte, high_byte) = get_operands(&registers, &memory);
+                let addr = apply_addressing(
+                    &memory,
+                    &registers,
+                    addressing_mode,
+                    Some(low_byte),
+                    Some(high_byte),
+                )
+                .unwrap();
+
+                and(&mut registers, &mut memory, addr);
                 registers.pc += num_operands;
             }
         }
