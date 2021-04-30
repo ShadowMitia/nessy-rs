@@ -97,6 +97,7 @@ mod rp2a03 {
             STA,
             INC,
             LDX,
+            TXS,
         }
 
         pub fn match_instruction(opcode: u8) -> (Instructions, AddressingMode) {
@@ -140,6 +141,8 @@ mod rp2a03 {
                 0xA2 => (Instructions::LDX, AddressingMode::Immediate),
                 0xA6 => (Instructions::LDX, AddressingMode::ZeroPage),
                 0xB6 => (Instructions::LDX, AddressingMode::ZeroPageIndexedWithY),
+                // TXS
+                0x9a => (Instructions::TXS, AddressingMode::Implied),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -279,6 +282,21 @@ mod rp2a03 {
             ldx(&mut registers, 0x80);
             assert_eq!(registers.x, 0x80);
             assert_eq!(registers.status & 0b10000000, 0b10000000);
+        }
+
+        pub fn txs(registers: &mut Registers, memory: &mut Memory) {
+            memory.stack_push(registers.x);
+        }
+
+        #[test]
+        fn txs_test() {
+            let mut registers = Registers::new();
+            let mut memory = Memory::new();
+
+            registers.x = 42;
+            txs(&mut registers, &mut memory);
+
+            assert_eq!(memory.memory[0x01FF], 42);
         }
 
         /**
@@ -516,7 +534,7 @@ mod rp2a03 {
 
 use rp2a03::{AddressingMode, Instructions::num_operands_from_addressing, Registers, *};
 
-use crate::rp2a03::Instructions::apply_addressing;
+use crate::rp2a03::Instructions::{apply_addressing, txs};
 
 fn decode(memory: &mut [u8], registers: &mut Registers) {}
 
@@ -662,6 +680,10 @@ fn main() {
                 .unwrap();
 
                 Instructions::ldx(&mut registers, (addr & 0x00FF) as u8);
+                registers.pc += num_operands;
+            }
+            Instructions::Instructions::TXS => {
+                txs(&mut registers, &mut memory);
                 registers.pc += num_operands;
             }
         }
