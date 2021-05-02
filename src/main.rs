@@ -83,7 +83,7 @@ mod rp2a03 {
 
     pub mod Instructions {
 
-        use std::{mem, ops::Add};
+        use std::{collections::HashMap, mem, ops::Add};
 
         use crate::address_from_bytes;
 
@@ -99,6 +99,7 @@ mod rp2a03 {
             LDX,
             TXS,
             AND,
+            BEQ,
         }
 
         pub fn match_instruction(opcode: u8) -> (Instructions, AddressingMode) {
@@ -152,6 +153,8 @@ mod rp2a03 {
                 0x2A => (Instructions::AND, AddressingMode::Accumulator),
                 0x26 => (Instructions::AND, AddressingMode::ZeroPage),
                 0x36 => (Instructions::AND, AddressingMode::ZeroPageIndexedWithX),
+                // BEQ
+                0xF0 => (Instructions::BEQ, AddressingMode::Relative),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -328,6 +331,59 @@ mod rp2a03 {
             assert_eq!(registers.a, 0);
         }
 
+        pub fn beq(registers: &mut Registers, value: u16) -> bool {
+            // Check if zero flag is enabled
+            if (registers.status & 0b00000010) == 0b00000010 {
+                let mut value = value as i32;
+                if value >= 0x80 {
+                    // BEQ only has relative addressing mode, so only low bytes used
+                    value -= 1 << 8;
+                }
+                registers.pc = (registers.pc as i32 + value as i32) as u16;
+                true
+            } else {
+                false
+            }
+        }
+
+        #[test]
+        fn beq_test() {
+            let mut registers = Registers::new();
+
+            registers.status = 0b00000000;
+            beq(&mut registers, 0x10);
+            assert_eq!(registers.pc, 0x0);
+
+            registers.pc = 0x0;
+            registers.status = 0b00000010;
+            beq(&mut registers, 0x10);
+            assert_eq!(registers.pc, 0x10);
+
+            registers.pc = 0x43;
+            registers.status = 0b00000010;
+            beq(&mut registers, 0xFF);
+            assert_eq!(registers.pc, 0x42);
+        }
+
+        // fn convert_u8_hex_to_dex(val: i8) -> i8 {
+        //     let mut table = [0i8; 256];
+
+        //     table
+        //         .iter_mut()
+        //         .enumerate()
+        //         .map(|(i, _)| {
+        //             let val = i as u8;
+        //             if val & 0b10000000 == 0b10000000 {
+        //                 val - (1 << 7)
+        //             } else {
+        //                 val
+        //             }
+        //         })
+        //         .collect::<[i8; 256]>();
+
+        //     table[val as usize]
+        // }
+
         /**
         Applies addressing mode rules to operands and gives out 16-bit results
          */
@@ -433,7 +489,7 @@ mod rp2a03 {
                 &registers,
                 AddressingMode::Immediate,
                 Some(0x1),
-                None
+                None,
             );
             assert_eq!(res, Some(0x1));
 
@@ -561,7 +617,7 @@ mod rp2a03 {
 
 use rp2a03::{AddressingMode, Instructions::num_operands_from_addressing, Registers, *};
 
-use crate::rp2a03::Instructions::{and, apply_addressing, txs};
+use crate::rp2a03::Instructions::{and, apply_addressing, beq, txs};
 
 fn decode(memory: &mut [u8], registers: &mut Registers) {}
 
@@ -727,6 +783,21 @@ fn main() {
 
                 and(&mut registers, memory.memory[addr as usize]);
                 registers.pc += num_operands;
+            }
+            Instructions::Instructions::BEQ => {
+                let (low_byte, high_byte) = get_operands(&registers, &memory);
+                let addr = apply_addressing(
+                    &memory,
+                    &registers,
+                    addressing_mode,
+                    Some(low_byte),
+                    Some(high_byte),
+                )
+                .unwrap();
+
+                if !beq(&mut registers, addr) {
+                    registers.pc += num_operands;
+                }
             }
         }
     }
