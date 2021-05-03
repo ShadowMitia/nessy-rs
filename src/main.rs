@@ -84,6 +84,8 @@ mod rp2a03 {
 
     pub mod instructions {
 
+        use std::mem;
+
         use crate::{address_from_bytes, BREAK_VECTOR_ADDDRESS};
 
         use super::*;
@@ -100,6 +102,7 @@ mod rp2a03 {
             TXS,
             AND,
             BEQ,
+            CPX,
         }
 
         pub fn match_instruction(opcode: u8) -> (Instructions, AddressingMode) {
@@ -155,6 +158,10 @@ mod rp2a03 {
                 0x36 => (Instructions::AND, AddressingMode::ZeroPageIndexedWithX),
                 // BEQ
                 0xF0 => (Instructions::BEQ, AddressingMode::Relative),
+                // CPX
+                0xEC => (Instructions::CPX, AddressingMode::Absolute),
+                0xE0 => (Instructions::CPX, AddressingMode::Immediate),
+                0xE4 => (Instructions::CPX, AddressingMode::ZeroPage),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -369,6 +376,45 @@ mod rp2a03 {
             registers.status = 0b00000010;
             beq(&mut registers, 0xFD);
             assert_eq!(registers.pc, 0x42);
+        }
+
+        pub fn cpx(registers: &mut Registers, memory: &mut Memory, value: u16) {
+            registers.status &= 0b01111100;
+
+            match registers.x.cmp(&memory.memory[value as usize]) {
+                std::cmp::Ordering::Less => {
+                    // registers.status &= 0b00000000;
+                }
+                std::cmp::Ordering::Equal => {
+                    registers.status |= 0b00000011;
+                }
+                std::cmp::Ordering::Greater => registers.status |= 0b00000001,
+            }
+
+            if (registers.x as i32 - memory.memory[value as usize] as i32) < 0 {
+                registers.status |= 0b10000000;
+            }
+        }
+
+        #[test]
+        fn cpx_test() {
+            let mut registers = Registers::new();
+            let mut memory = Memory::new();
+
+            registers.x = 0x10;
+            memory.memory[0x42] = 0x10;
+            cpx(&mut registers, &mut memory, 0x42);
+            assert_eq!(registers.status, 0b00000011);
+
+            registers.x = 0x9;
+            memory.memory[0x42] = 0x10;
+            cpx(&mut registers, &mut memory, 0x42);
+            assert_eq!(registers.status, 0b10000000);
+
+            registers.x = 0xFF;
+            memory.memory[0x42] = 0x10;
+            cpx(&mut registers, &mut memory, 0x42);
+            assert_eq!(registers.status, 0b00000001);
         }
 
         /**
@@ -692,12 +738,12 @@ fn main() {
 
         let ops = get_operands(&registers, &memory);
 
-        println!(
-            "{:#x?} {:#x?} ({:#x})",
-            instruction,
-            ops,
-            address_from_bytes(ops.0, ops.1)
-        );
+        // println!(
+        //     "{:#x?} {:#x?} ({:#x})",
+        //     instruction,
+        //     ops,
+        //     address_from_bytes(ops.0, ops.1)
+        // );
 
         match instruction {
             Instructions::SEI => {
@@ -800,6 +846,20 @@ fn main() {
                 if !beq(&mut registers, addr) {
                     registers.pc += num_operands;
                 }
+            }
+            Instructions::CPX => {
+                let (low_byte, high_byte) = get_operands(&registers, &memory);
+                let addr = apply_addressing(
+                    &memory,
+                    &registers,
+                    addressing_mode,
+                    Some(low_byte),
+                    Some(high_byte),
+                )
+                .unwrap();
+
+                cpx(&mut registers, &mut memory, addr);
+                registers.pc += num_operands;
             }
         }
     }
