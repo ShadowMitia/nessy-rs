@@ -84,10 +84,11 @@ mod rp2a03 {
 
     pub mod instructions {
 
-        use crate::address_from_bytes;
+        use crate::{address_from_bytes, BREAK_VECTOR_ADDDRESS};
 
         use super::*;
 
+        #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
         pub enum Instructions {
             SEI,
             CLD,
@@ -214,18 +215,24 @@ mod rp2a03 {
             memory.stack_push((registers.pc & 0xFF) as u8);
             registers.status |= 0b00010100; // Enable B and I registers
             memory.stack_push(registers.status);
-            registers.pc = address_from_bytes(memory.memory[0xFFFE], memory.memory[0xFFFF])
+            registers.pc = address_from_bytes(
+                memory.memory[BREAK_VECTOR_ADDDRESS as usize],
+                memory.memory[(BREAK_VECTOR_ADDDRESS + 1) as usize],
+            )
         }
 
         #[test]
         fn brk_test() {
             let mut registers = Registers::new();
             let mut memory = Memory::new();
+            memory.memory[BREAK_VECTOR_ADDDRESS as usize] = 0x42;
+            memory.memory[(BREAK_VECTOR_ADDDRESS + 1) as usize] = 0x0;
 
             brk(&mut registers, &mut memory);
             assert_eq!(registers.status, 0b00010100);
-            assert_eq!(memory.memory[0x01FF], 0);
             assert_eq!(memory.memory[0x01FE], 2);
+            assert_eq!(memory.memory[0x01FF], 0);
+            assert_eq!(registers.pc, 0x42);
         }
 
         pub fn sta(registers: &mut Registers, memory: &mut Memory, addr: u16) {
@@ -333,12 +340,12 @@ mod rp2a03 {
         pub fn beq(registers: &mut Registers, value: u16) -> bool {
             // Check if zero flag is enabled
             if (registers.status & 0b00000010) == 0b00000010 {
-                let mut value = value as i32;
                 if value >= 0x80 {
-                    // BEQ only has relative addressing mode, so only low bytes used
-                    value -= 1 << 8;
+                    let value = (value as i32 - (1 << 8)) as i16;
+                    registers.pc = 2 + (registers.pc as i16 + value) as u16;
+                } else {
+                    registers.pc = 2 + (registers.pc as i16 + value as i16) as u16;
                 }
-                registers.pc = 2 + (registers.pc as i32 + value as i32) as u16;
                 true
             } else {
                 false
@@ -363,25 +370,6 @@ mod rp2a03 {
             beq(&mut registers, 0xFD);
             assert_eq!(registers.pc, 0x42);
         }
-
-        // fn convert_u8_hex_to_dex(val: i8) -> i8 {
-        //     let mut table = [0i8; 256];
-
-        //     table
-        //         .iter_mut()
-        //         .enumerate()
-        //         .map(|(i, _)| {
-        //             let val = i as u8;
-        //             if val & 0b10000000 == 0b10000000 {
-        //                 val - (1 << 7)
-        //             } else {
-        //                 val
-        //             }
-        //         })
-        //         .collect::<[i8; 256]>();
-
-        //     table[val as usize]
-        // }
 
         /**
         Applies addressing mode rules to operands and gives out 16-bit results
@@ -469,13 +457,14 @@ mod rp2a03 {
             }
         }
 
+        // TODO: add some missing cases (negative cases, ...)
         #[test]
         fn apply_addressing_test() {
             let mut memory = Memory::new();
 
             let mut registers = Registers::new();
 
-            // IMPLIED
+            // Accumulator
             let res =
                 apply_addressing(&memory, &registers, AddressingMode::Accumulator, None, None);
             assert_eq!(res, None);
@@ -493,6 +482,15 @@ mod rp2a03 {
                 None,
             );
             assert_eq!(res, Some(0x1));
+
+            let res = apply_addressing(
+                &memory,
+                &registers,
+                AddressingMode::Immediate,
+                Some(0x81),
+                None,
+            );
+            assert_eq!(res, Some(0x81));
 
             // ABSOLUTE
             memory.memory[0x201] = 42;
@@ -677,8 +675,6 @@ fn main() {
     let reset_vector_low = memory.memory[RESET_VECTOR_ADDRESS as usize];
     let reset_vector_high = memory.memory[(RESET_VECTOR_ADDRESS + 1) as usize];
 
-    println!("hi {:x} lo {:x}", reset_vector_high, reset_vector_low);
-
     let reset_vector = address_from_bytes(reset_vector_low, reset_vector_high);
 
     println!("Reset vector {:x}", reset_vector);
@@ -690,8 +686,18 @@ fn main() {
     loop {
         let byte = memory.memory[registers.pc as usize];
         let (instruction, addressing_mode) = match_instruction(byte);
+        registers.pc += 1;
 
-        let num_operands = num_operands_from_addressing(&addressing_mode) as u16 + 1;
+        let num_operands = num_operands_from_addressing(&addressing_mode) as u16;
+
+        let ops = get_operands(&registers, &memory);
+
+        println!(
+            "{:#x?} {:#x?} ({:#x})",
+            instruction,
+            ops,
+            address_from_bytes(ops.0, ops.1)
+        );
 
         match instruction {
             Instructions::SEI => {
