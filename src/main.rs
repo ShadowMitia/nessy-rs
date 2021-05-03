@@ -103,6 +103,7 @@ mod rp2a03 {
             AND,
             BEQ,
             CPX,
+            DEY,
         }
 
         pub fn match_instruction(opcode: u8) -> (Instructions, AddressingMode) {
@@ -162,6 +163,8 @@ mod rp2a03 {
                 0xEC => (Instructions::CPX, AddressingMode::Absolute),
                 0xE0 => (Instructions::CPX, AddressingMode::Immediate),
                 0xE4 => (Instructions::CPX, AddressingMode::ZeroPage),
+                // DEY
+                0x88 => (Instructions::DEY, AddressingMode::Implied),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -415,6 +418,34 @@ mod rp2a03 {
             memory.memory[0x42] = 0x10;
             cpx(&mut registers, &mut memory, 0x42);
             assert_eq!(registers.status, 0b00000001);
+        }
+
+        pub fn dey(registers: &mut Registers) {
+            registers.y = (registers.y as i16 - 1) as u8;
+
+            registers.status = if registers.y == 0 {
+                registers.status | 0b00000010
+            } else {
+                registers.status & 0b11111101
+            };
+            registers.status = if registers.y >= 0x80 {
+                registers.status | 0b10000000
+            } else {
+                registers.status & 0b01111111
+            };
+        }
+
+        #[test]
+        fn dey_test() {
+            let mut registers = Registers::new();
+
+            registers.y = 0x43;
+            dey(&mut registers);
+            assert_eq!(registers.y, 0x42);
+
+            registers.y = 0x0;
+            dey(&mut registers);
+            assert_eq!(registers.y, 0xFF);
         }
 
         /**
@@ -859,6 +890,10 @@ fn main() {
                 .unwrap();
 
                 cpx(&mut registers, &mut memory, addr);
+                registers.pc += num_operands;
+            }
+            Instructions::DEY => {
+                dey(&mut registers);
                 registers.pc += num_operands;
             }
         }
