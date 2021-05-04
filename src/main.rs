@@ -110,6 +110,7 @@ mod rp2a03 {
             DEY,
             BPL,
             PLA,
+            TAY
         }
 
         #[must_use]
@@ -176,6 +177,8 @@ mod rp2a03 {
                 0x10 => (Instructions::BPL, AddressingMode::Relative),
                 // PLA
                 0x68 => (Instructions::PLA, AddressingMode::Implied),
+                // TAY
+                0xA8 => (Instructions::TAY, AddressingMode::Implied),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -500,6 +503,29 @@ mod rp2a03 {
 
             memory.stack_push(0x42);
             apl(&mut registers, &mut memory);
+            assert_eq!(registers.a, 0x42);
+        }
+
+        pub fn tay(registers: &mut Registers) {
+            registers.a = registers.y;
+            registers.status = if registers.a == 0 {
+                registers.status | 0b00000010
+            } else {
+                registers.status & 0b11111101
+            };
+            registers.status = if registers.a >= 0x80 {
+                registers.status | 0b10000000
+            } else {
+                registers.status & 0b01111111
+            };
+        }
+
+        #[test]
+        fn tay_test() {
+            let mut registers = Registers::new();
+            registers.y = 0x42;
+
+            tay(&mut registers);
             assert_eq!(registers.a, 0x42);
         }
 
@@ -968,6 +994,10 @@ fn main() {
             }
             Instructions::PLA => {
                 apl(&mut registers, &mut memory);
+                registers.pc += num_operands;
+            }
+            Instructions::TAY => {
+                tay(&mut registers);
                 registers.pc += num_operands;
             }
         }
