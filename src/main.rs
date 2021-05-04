@@ -110,7 +110,8 @@ mod rp2a03 {
             DEY,
             BPL,
             PLA,
-            TAY
+            TAY,
+            CPY,
         }
 
         #[must_use]
@@ -179,6 +180,10 @@ mod rp2a03 {
                 0x68 => (Instructions::PLA, AddressingMode::Implied),
                 // TAY
                 0xA8 => (Instructions::TAY, AddressingMode::Implied),
+                // CPY
+                0xCC => (Instructions::CPY, AddressingMode::Absolute),
+                0xC0 => (Instructions::CPX, AddressingMode::Immediate),
+                0xC4 => (Instructions::CPX, AddressingMode::ZeroPage),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -527,6 +532,45 @@ mod rp2a03 {
 
             tay(&mut registers);
             assert_eq!(registers.a, 0x42);
+        }
+
+        pub fn cpy(registers: &mut Registers, memory: &mut Memory, value: u16) {
+            registers.status &= 0b01111100;
+
+            match registers.y.cmp(&memory.memory[value as usize]) {
+                std::cmp::Ordering::Less => {
+                    // registers.status &= 0b00000000;
+                }
+                std::cmp::Ordering::Equal => {
+                    registers.status |= 0b00000011;
+                }
+                std::cmp::Ordering::Greater => registers.status |= 0b00000001,
+            }
+
+            if (registers.y as i32 - memory.memory[value as usize] as i32) < 0 {
+                registers.status |= 0b10000000;
+            }
+        }
+
+        #[test]
+        fn cpy_test() {
+            let mut registers = Registers::new();
+            let mut memory = Memory::new();
+
+            registers.y = 0x10;
+            memory.memory[0x42] = 0x10;
+            cpy(&mut registers, &mut memory, 0x42);
+            assert_eq!(registers.status, 0b00000011);
+
+            registers.y = 0x9;
+            memory.memory[0x42] = 0x10;
+            cpy(&mut registers, &mut memory, 0x42);
+            assert_eq!(registers.status, 0b10000000);
+
+            registers.y = 0xFF;
+            memory.memory[0x42] = 0x10;
+            cpy(&mut registers, &mut memory, 0x42);
+            assert_eq!(registers.status, 0b00000001);
         }
 
         /**
@@ -998,6 +1042,20 @@ fn main() {
             }
             Instructions::TAY => {
                 tay(&mut registers);
+                registers.pc += num_operands;
+            }
+            Instructions::CPY => {
+                let (low_byte, high_byte) = get_operands(&registers, &memory);
+                let addr = apply_addressing(
+                    &memory,
+                    &registers,
+                    addressing_mode,
+                    Some(low_byte),
+                    Some(high_byte),
+                )
+                .unwrap();
+
+                cpy(&mut registers, &mut memory, addr);
                 registers.pc += num_operands;
             }
         }
