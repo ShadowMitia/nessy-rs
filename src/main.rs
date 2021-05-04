@@ -112,6 +112,7 @@ mod rp2a03 {
             PLA,
             TAY,
             CPY,
+            BNE,
         }
 
         #[must_use]
@@ -184,6 +185,8 @@ mod rp2a03 {
                 0xCC => (Instructions::CPY, AddressingMode::Absolute),
                 0xC0 => (Instructions::CPX, AddressingMode::Immediate),
                 0xC4 => (Instructions::CPX, AddressingMode::ZeroPage),
+                // BNE
+                0xD0 => (Instructions::BNE, AddressingMode::Relative),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -571,6 +574,35 @@ mod rp2a03 {
             memory.memory[0x42] = 0x10;
             cpy(&mut registers, &mut memory, 0x42);
             assert_eq!(registers.status, 0b00000001);
+        }
+
+        #[must_use]
+        pub fn bne(registers: &mut Registers, value: u16) -> bool {
+            // Check if zero flag is enabled
+            if (registers.status & 0b00000010) == 0b00000010 {
+                if value >= 0x80 {
+                    let value = (value as i32 - (1 << 8)) as i16;
+                    registers.pc = 2 + (registers.pc as i16 + value) as u16;
+                } else {
+                    registers.pc = 2 + (registers.pc as i16 + value as i16) as u16;
+                }
+                true
+            } else {
+                false
+            }
+        }
+
+        #[test]
+        fn bne_test() {
+            let mut registers = Registers::new();
+
+            registers.status = 0b00000010;
+            bne(&mut registers, 0x10);
+            assert_eq!(registers.pc, 0x12);
+
+            registers.status = 0b00000000;
+            bne(&mut registers, 0x10);
+            assert_eq!(registers.pc, 0x12);
         }
 
         /**
@@ -1057,6 +1089,21 @@ fn main() {
 
                 cpy(&mut registers, &mut memory, addr);
                 registers.pc += num_operands;
+            }
+            Instructions::BNE => {
+                let (low_byte, high_byte) = get_operands(&registers, &memory);
+                let addr = apply_addressing(
+                    &memory,
+                    &registers,
+                    addressing_mode,
+                    Some(low_byte),
+                    Some(high_byte),
+                )
+                .unwrap();
+
+                if !bne(&mut registers, addr) {
+                    registers.pc += num_operands;
+                }
             }
         }
     }
