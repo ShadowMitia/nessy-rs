@@ -64,6 +64,12 @@ mod rp2a03 {
             self.memory[self.stack_pointer as usize] = val;
             self.stack_pointer -= 1;
         }
+
+        #[must_use]
+        pub fn stack_pop(&mut self) -> u8 {
+            self.stack_pointer += 1;
+            self.memory[self.stack_pointer as usize]
+        }
     }
 
     pub enum AddressingMode {
@@ -84,8 +90,6 @@ mod rp2a03 {
 
     pub mod instructions {
 
-        use std::{mem, ops::Add};
-
         use crate::{address_from_bytes, BREAK_VECTOR_ADDDRESS};
 
         use super::*;
@@ -105,8 +109,10 @@ mod rp2a03 {
             CPX,
             DEY,
             BPL,
+            PLA,
         }
 
+        #[must_use]
         pub fn match_instruction(opcode: u8) -> (Instructions, AddressingMode) {
             match opcode {
                 // LDA
@@ -168,6 +174,8 @@ mod rp2a03 {
                 0x88 => (Instructions::DEY, AddressingMode::Implied),
                 // BPL
                 0x10 => (Instructions::BPL, AddressingMode::Relative),
+                // PLA
+                0x68 => (Instructions::PLA, AddressingMode::Implied),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -350,6 +358,7 @@ mod rp2a03 {
             assert_eq!(registers.a, 0);
         }
 
+        #[must_use]
         pub fn beq(registers: &mut Registers, value: u16) -> bool {
             // Check if zero flag is enabled
             if (registers.status & 0b00000010) == 0b00000010 {
@@ -451,6 +460,7 @@ mod rp2a03 {
             assert_eq!(registers.y, 0xFF);
         }
 
+        #[must_use]
         pub fn bpl(registers: &mut Registers, value: u16) -> bool {
             // Check if zero flag is enabled
             if (registers.status & 0b10000000) == 0b00000000 {
@@ -477,6 +487,20 @@ mod rp2a03 {
             registers.y = 0x0;
             dey(&mut registers);
             assert_eq!(registers.y, 0xFF);
+        }
+
+        pub fn apl(registers: &mut Registers, memory: &mut Memory) {
+            registers.a = memory.stack_pop();
+        }
+
+        #[test]
+        fn apl_test() {
+            let mut registers = Registers::new();
+            let mut memory = Memory::new();
+
+            memory.stack_push(0x42);
+            apl(&mut registers, &mut memory);
+            assert_eq!(registers.a, 0x42);
         }
 
         /**
@@ -941,6 +965,10 @@ fn main() {
                 if !bpl(&mut registers, addr) {
                     registers.pc += num_operands;
                 }
+            }
+            Instructions::PLA => {
+                apl(&mut registers, &mut memory);
+                registers.pc += num_operands;
             }
         }
     }
