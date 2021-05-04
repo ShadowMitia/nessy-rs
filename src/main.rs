@@ -84,7 +84,7 @@ mod rp2a03 {
 
     pub mod instructions {
 
-        use std::mem;
+        use std::{mem, ops::Add};
 
         use crate::{address_from_bytes, BREAK_VECTOR_ADDDRESS};
 
@@ -104,6 +104,7 @@ mod rp2a03 {
             BEQ,
             CPX,
             DEY,
+            BPL,
         }
 
         pub fn match_instruction(opcode: u8) -> (Instructions, AddressingMode) {
@@ -165,6 +166,8 @@ mod rp2a03 {
                 0xE4 => (Instructions::CPX, AddressingMode::ZeroPage),
                 // DEY
                 0x88 => (Instructions::DEY, AddressingMode::Implied),
+                // BPL
+                0x10 => (Instructions::BPL, AddressingMode::Relative),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -437,6 +440,34 @@ mod rp2a03 {
 
         #[test]
         fn dey_test() {
+            let mut registers = Registers::new();
+
+            registers.y = 0x43;
+            dey(&mut registers);
+            assert_eq!(registers.y, 0x42);
+
+            registers.y = 0x0;
+            dey(&mut registers);
+            assert_eq!(registers.y, 0xFF);
+        }
+
+        pub fn bpl(registers: &mut Registers, value: u16) -> bool {
+            // Check if zero flag is enabled
+            if (registers.status & 0b10000000) == 0b00000000 {
+                if value >= 0x80 {
+                    let value = (value as i32 - (1 << 8)) as i16;
+                    registers.pc = 2 + (registers.pc as i16 + value) as u16;
+                } else {
+                    registers.pc = 2 + (registers.pc as i16 + value as i16) as u16;
+                }
+                true
+            } else {
+                false
+            }
+        }
+
+        #[test]
+        fn bpl_test() {
             let mut registers = Registers::new();
 
             registers.y = 0x43;
@@ -895,6 +926,21 @@ fn main() {
             Instructions::DEY => {
                 dey(&mut registers);
                 registers.pc += num_operands;
+            }
+            Instructions::BPL => {
+                let (low_byte, high_byte) = get_operands(&registers, &memory);
+                let addr = apply_addressing(
+                    &memory,
+                    &registers,
+                    addressing_mode,
+                    Some(low_byte),
+                    Some(high_byte),
+                )
+                .unwrap();
+
+                if !bpl(&mut registers, addr) {
+                    registers.pc += num_operands;
+                }
             }
         }
     }
