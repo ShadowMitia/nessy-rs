@@ -72,6 +72,18 @@ mod rp2a03 {
         }
     }
 
+    #[test]
+    fn stack_test() {
+        let mut memory = Memory::new();
+
+        memory.stack_push(0x42);
+        assert_eq!(memory.stack_pointer, 0x01FE);
+
+        let val = memory.stack_pop();
+        assert_eq!(memory.stack_pointer, 0x01FF);
+        assert_eq!(val, 0x42);
+    }
+
     pub enum AddressingMode {
         Accumulator,
         Implied,
@@ -113,6 +125,7 @@ mod rp2a03 {
             TAY,
             CPY,
             BNE,
+            RTS,
         }
 
         #[must_use]
@@ -187,6 +200,8 @@ mod rp2a03 {
                 0xC4 => (Instructions::CPX, AddressingMode::ZeroPage),
                 // BNE
                 0xD0 => (Instructions::BNE, AddressingMode::Relative),
+                // RTS
+                0x60 => (Instructions::RTS, AddressingMode::Implied),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -390,17 +405,17 @@ mod rp2a03 {
             let mut registers = Registers::new();
 
             registers.status = 0b00000000;
-            beq(&mut registers, 0x10);
+            let _ = beq(&mut registers, 0x10);
             assert_eq!(registers.pc, 0x0);
 
             registers.pc = 0x0;
             registers.status = 0b00000010;
-            beq(&mut registers, 0x10);
+            let _ = beq(&mut registers, 0x10);
             assert_eq!(registers.pc, 0x12);
 
             registers.pc = 0x43;
             registers.status = 0b00000010;
-            beq(&mut registers, 0xFD);
+            let _ = beq(&mut registers, 0xFD);
             assert_eq!(registers.pc, 0x42);
         }
 
@@ -436,6 +451,11 @@ mod rp2a03 {
             memory.memory[0x42] = 0x10;
             cpx(&mut registers, &mut memory, 0x42);
             assert_eq!(registers.status, 0b10000000);
+
+            registers.x = 0x10;
+            memory.memory[0x42] = 0x9;
+            cpx(&mut registers, &mut memory, 0x42);
+            assert_eq!(registers.status, 0b00000001);
 
             registers.x = 0xFF;
             memory.memory[0x42] = 0x10;
@@ -597,12 +617,33 @@ mod rp2a03 {
             let mut registers = Registers::new();
 
             registers.status = 0b00000010;
-            bne(&mut registers, 0x10);
+            let _ = bne(&mut registers, 0x10);
             assert_eq!(registers.pc, 0x12);
 
             registers.status = 0b00000000;
-            bne(&mut registers, 0x10);
+            let _ = bne(&mut registers, 0x10);
             assert_eq!(registers.pc, 0x12);
+        }
+
+        pub fn rts(registers: &mut Registers, memory: &mut Memory) {
+            let low = memory.stack_pop();
+            let high = memory.stack_pop();
+            let addr = address_from_bytes(low, high);
+            println!("{val:b} {val}", val = addr);
+            registers.pc = addr;
+            registers.pc += 1;
+        }
+
+        #[test]
+        fn rts_test() {
+            let mut registers = Registers::new();
+            let mut memory = Memory::new();
+
+            memory.stack_push(0x0);
+            memory.stack_push(0x4);
+
+            rts(&mut registers, &mut memory);
+            assert_eq!(registers.pc, 0x5);
         }
 
         /**
@@ -872,12 +913,14 @@ fn get_operands(registers: &Registers, memory: &Memory) -> (u8, u8) {
 fn main() {
     println!("Nessy 🐉!");
 
+    let args: Vec<String> = std::env::args().collect();
+    println!("{:#?}", args);
+
     // Initialise memory
     let mut memory = Memory::new();
 
     // Load ROM and decode header
-    let rom =
-        include_bytes!("/home/dimitri/development/nessy-rs/Legend of Zelda, The (Europe).nes");
+    let rom = include_bytes!("/home/dimitri/development/nessy-rs/Legend of Zelda, The (Europe).nes")
 
     println!(
         "{}{}{} {}",
@@ -926,12 +969,12 @@ fn main() {
 
         let ops = get_operands(&registers, &memory);
 
-        // println!(
-        //     "{:#x?} {:#x?} ({:#x})",
-        //     instruction,
-        //     ops,
-        //     address_from_bytes(ops.0, ops.1)
-        // );
+        println!(
+            "{:?} {:x?} ({:#x})",
+            instruction,
+            ops,
+            address_from_bytes(ops.0, ops.1)
+        );
 
         match instruction {
             Instructions::SEI => {
@@ -1104,6 +1147,9 @@ fn main() {
                 if !bne(&mut registers, addr) {
                     registers.pc += num_operands;
                 }
+            }
+            Instructions::RTS => {
+                rts(&mut registers, &mut memory);
             }
         }
     }
