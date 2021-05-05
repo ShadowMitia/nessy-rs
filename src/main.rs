@@ -131,6 +131,7 @@ mod rp2a03 {
             JSR,
             NOP,
             SEC,
+            BCS,
         }
 
         #[must_use]
@@ -220,6 +221,8 @@ mod rp2a03 {
                 0xEA => (Instructions::NOP, AddressingMode::Implied),
                 // SEC
                 0x38 => (Instructions::SEC, AddressingMode::Implied),
+                // BCS
+                0xB0 => (Instructions::BCS, AddressingMode::Relative),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -725,6 +728,33 @@ mod rp2a03 {
             assert_eq!(registers.status & 0x1, 0x1);
         }
 
+        #[must_use]
+        pub fn bcs(registers: &mut Registers, addr: u16) -> bool {
+            if registers.status & 0x1 == 0x1 {
+                if addr >= 0x80 {
+                    let value = (addr as i32 - (1 << 8)) as i16;
+                    registers.pc = 2 + (registers.pc as i16 + value) as u16;
+                } else {
+                    registers.pc = 2 + (registers.pc as i16 + addr as i16) as u16;
+                }
+                true
+            } else {
+                false
+            }
+        }
+
+        #[test]
+        fn bcs_test() {
+            let mut registers = Registers::new();
+
+            let _ = bcs(&mut registers, 0x20);
+            assert_eq!(registers.pc, 0x0);
+
+            registers.status |= 0x1;
+            let _ = bcs(&mut registers, 0x4);
+            assert_eq!(registers.pc, 0x6);
+        }
+
         /**
         Applies addressing mode rules to operands and gives out 16-bit results
          */
@@ -800,7 +830,7 @@ mod rp2a03 {
                 AddressingMode::Immediate => 1,
                 AddressingMode::Absolute => 2,
                 AddressingMode::ZeroPage => 1,
-                AddressingMode::Relative => 1,
+                AddressingMode::Relative => 2,
                 AddressingMode::AbsoluteIndirect => 2,
                 AddressingMode::AbsoluteIndirectWithX => 2,
                 AddressingMode::AbsoluteIndirectWithY => 2,
@@ -1165,14 +1195,16 @@ fn main() {
         let byte = memory.memory[registers.pc as usize];
         let (instruction, addressing_mode) = match_instruction(byte);
 
-        let mut num_operands = num_operands_from_addressing(&addressing_mode) as u16;
+        let num_operands = num_operands_from_addressing(&addressing_mode) as u16;
         let ops = get_operands(&registers, &memory);
 
         print!(
             "{:4X} {:2X} ",
             registers.pc, memory.memory[registers.pc as usize]
         );
-        print!("{:2X} ", ops.0);
+        if num_operands > 0 {
+            print!("{:2X} ", ops.0);
+        }
         if num_operands >= 2 {
             print!("{:2X} ", ops.1);
         } else {
@@ -1292,6 +1324,11 @@ fn main() {
             Instructions::SEC => {
                 sec(&mut registers);
                 registers.pc += num_operands;
+            }
+            Instructions::BCS => {
+                if !bcs(&mut registers, addr) {
+                    registers.pc += num_operands;
+                }
             }
         }
     }
