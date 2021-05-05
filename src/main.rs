@@ -127,6 +127,7 @@ mod rp2a03 {
             BNE,
             RTS,
             JMP,
+            STX,
         }
 
         #[must_use]
@@ -206,6 +207,10 @@ mod rp2a03 {
                 // JMP
                 0x4C => (Instructions::JMP, AddressingMode::Absolute),
                 0x6C => (Instructions::JMP, AddressingMode::AbsoluteIndirect),
+                // STX
+                0x8E => (Instructions::STX, AddressingMode::Absolute),
+                0x86 => (Instructions::STX, AddressingMode::ZeroPage),
+                0x96 => (Instructions::STX, AddressingMode::ZeroPageIndexedWithY),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -660,6 +665,20 @@ mod rp2a03 {
 
             jmp(&mut registers, 0x42);
             assert_eq!(registers.pc, 0x42);
+        }
+
+        pub fn stx(registers: &mut Registers, memory: &mut Memory, addr: u16) {
+            memory.memory[addr as usize] = registers.x;
+        }
+
+        #[test]
+        fn stx_test() {
+            let mut registers = Registers::new();
+            let mut memory = Memory::new();
+
+            registers.x = 0x42;
+            stx(&mut registers, &mut memory, 0x30);
+            assert_eq!(memory.memory[0x30], 0x42);
         }
 
         /**
@@ -1125,14 +1144,14 @@ fn main() {
         registers.pc += 1;
 
         let (low_byte, high_byte) = ops;
-        let addr = apply_addressing(
+        let mut addr = apply_addressing(
             &memory,
             &registers,
             addressing_mode,
             Some(low_byte),
             Some(high_byte),
         )
-        .unwrap();
+        .unwrap_or(0);
 
         match instruction {
             Instructions::SEI => {
@@ -1212,6 +1231,10 @@ fn main() {
             }
             Instructions::JMP => {
                 jmp(&mut registers, addr);
+            }
+            Instructions::STX => {
+                stx(&mut registers, &mut memory, addr);
+                registers.pc += num_operands;
             }
         }
     }
