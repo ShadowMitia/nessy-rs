@@ -43,7 +43,7 @@ mod rp2a03 {
     pub struct Memory {
         pub memory: Vec<u8>,
         pub ppu: Vec<u8>,
-        stack_pointer: u16,
+        pub stack_pointer: u16,
     }
 
     impl Memory {
@@ -265,7 +265,7 @@ mod rp2a03 {
             registers.pc = address_from_bytes(
                 memory.memory[BREAK_VECTOR_ADDDRESS as usize],
                 memory.memory[(BREAK_VECTOR_ADDDRESS + 1) as usize],
-            )
+            );
         }
 
         #[test]
@@ -890,6 +890,7 @@ mod rp2a03 {
 }
 
 use rp2a03::{instructions::*, Registers, *};
+
 fn address_from_bytes(low_byte: u8, high_byte: u8) -> u16 {
     ((high_byte as u16) << 8) | low_byte as u16
 }
@@ -910,43 +911,162 @@ fn get_operands(registers: &Registers, memory: &Memory) -> (u8, u8) {
     (low, high)
 }
 
+mod nes_rom {
+    use super::*;
+
+    pub mod mappers {
+
+        use super::*;
+
+        pub(crate) fn load_rom(memory: &mut Memory, rom: &[u8], mapper: Mapper) {
+            match mapper {
+                Mapper::Nrom => {
+                    memory.memory[PRG_ROM_START..PRG_ROM_START + 16384]
+                        .copy_from_slice(&rom[16..16 + 16384]);
+                    memory.memory[0xC000..=0xFFFF].copy_from_slice(&rom[16..16 + 16384]);
+                }
+            }
+        }
+        pub enum Mapper {
+            Nrom,
+        }
+    }
+
+    struct Ines2 {}
+
+    #[derive(Debug)]
+    pub enum SupportedFormat {
+        ines2,
+        ines,
+        unsupported,
+    }
+
+    pub struct NESFile {
+        pub mapper: mappers::Mapper,
+        pub num_prgrom: u8,
+        pub num_chrrom: u8,
+        pub data: Vec<u8>,
+    }
+
+    pub const HEADER_START: usize = 0;
+    pub const TRAINER_START: usize = 17;
+    pub const PRG_ROM_START: usize = 529;
+
+    impl NESFile {
+        pub fn new(rom: &[u8]) -> Self {
+            let NES = &rom[0..4];
+            let num_prgrom = rom[4];
+            let num_chrrom = rom[5];
+            let flags6 = rom[6];
+
+            let mirroring = flags6 & 0x1 == 0x1;
+            let persistent_memory = flags6 & 0x2 == 0x2;
+            let has_trainer = flags6 & 0x4 == 0x4;
+            let four_screen_vram = flags6 & 0x8 & 0x8;
+            let mapper_lsb = flags6 & 0xF0 >> 4;
+
+            let flags7 = rom[7];
+
+            let vs = flags7 & 0x1 == 0x1;
+            let playchoice = flags7 & 0x2 == 0x2;
+            let mapper_msb = (flags7 & 0xF0) >> 4;
+
+            let prgram_size = if rom[8] == 0 { 1 } else { rom[8] };
+
+            let flags9 = rom[9];
+            let tv_system = flags9 & 0x1 == 0x1;
+
+            let flags10 = rom[10];
+            let tv_system2 = flags10 & 0x3;
+            let has_prg_ram = flags10 & 0b10000 == 0b10000;
+            let has_bus_conflict = flags10 & 0b100000 == 0b100000;
+
+            let padding = &rom[11..16];
+            // TODO: there are checks to do in padding in some cases
+            // TODO: See http://wiki.nesdev.com/w/index.php/INES before variant comparison
+
+            ////
+
+            let mapper = (mapper_msb << 4) | mapper_lsb;
+
+            println!("Mapper number {}", mapper);
+            println!(
+                "Num PRG ROM {} ({}KB)",
+                num_prgrom,
+                num_prgrom as u32 * 16384
+            );
+            println!(
+                "Num CHR ROM {} ({}KB)",
+                num_chrrom,
+                num_chrrom as u32 * 8192
+            );
+            println!("Has trainer {}", has_trainer);
+            println!("Has PRG RAM {}", has_prg_ram);
+
+            let format = NESFile::get_file_format(rom);
+
+            Self {
+                mapper: mappers::Mapper::Nrom,
+                num_prgrom,
+                num_chrrom,
+                data: rom.to_vec(),
+            }
+        }
+
+        fn get_file_format(header: &[u8]) -> SupportedFormat {
+            let ines_format = header[0] as char == 'N'
+                && header[1] as char == 'E'
+                && header[2] as char == 'S'
+                && header[3] == 0x1A; // MS-DOS end of file
+
+            let nes2 = ines_format && (header[7] & 0x0C) == 0x08;
+            // TODO: check proper size of ROM image "size taking into account byte 9 does not exceed the actual size of the ROM image, then NES 2.0."
+
+            if nes2 {
+                SupportedFormat::ines2
+            } else if ines_format {
+                SupportedFormat::ines
+            } else {
+                SupportedFormat::unsupported
+            }
+        }
+    }
+}
+
 fn main() {
     println!("Nessy 🐉!");
 
-    let args: Vec<String> = std::env::args().collect();
-    println!("{:#?}", args);
+    // let args: Vec<String> = std::env::args().collect();
+    // println!("{:#?}", args);
 
     // Initialise memory
     let mut memory = Memory::new();
 
     // Load ROM and decode header
-    let rom = include_bytes!("/home/dimitri/development/nessy-rs/Legend of Zelda, The (Europe).nes")
+    let rom = include_bytes!("../nestest.nes");
+
+    let nesfile = nes_rom::NESFile::new(rom);
 
     println!(
         "{}{}{} {}",
         rom[0] as char, rom[1] as char, rom[2] as char, rom[3]
     );
 
-    let num_prgrom = rom[4];
-    let num_chrrom = if rom[5] == 0 { 1 } else { rom[5] };
-
-    println!(
-        "Num of 16k bytes PRG ROM {} ({}k bytes)\nNum of 8k CHR ROM {}",
-        num_prgrom,
-        16 * num_prgrom,
-        num_chrrom
-    );
+    // println!(
+    //     "Num of 16k bytes PRG ROM {} ({}k bytes)\nNum of 8k CHR ROM {}",
+    //     num_prgrom,
+    //     16 * num_prgrom,
+    //     num_chrrom
+    // );
 
     // Load up memory
-    for index in 0..(0x10000 - PRGROM_ADDRESS) {
-        memory.memory[(PRGROM_ADDRESS + index) as usize] = rom[index as usize];
-    }
+    nes_rom::mappers::load_rom(&mut memory, rom, nesfile.mapper);
 
-    let bank_seven = 16 + 7 * 16384;
+    // let bank_seven = 16 + 7 * 16384;
 
-    for index in 0..16384 {
-        memory.memory[(0xC000 + index) as usize] = rom[(bank_seven + index) as usize];
-    }
+    // for index in 0..16384 {
+    //     memory.memory[(0xC000 + index) as usize] = rom[(bank_seven + index) as usize];
+    // }
 
     // Get the RESET vector to find start of the game
     let reset_vector_low = memory.memory[RESET_VECTOR_ADDRESS as usize];
@@ -958,23 +1078,32 @@ fn main() {
 
     // Set up registers
     let mut registers = Registers::new();
-    registers.pc = reset_vector;
+    registers.pc = 0xC000;
 
     loop {
         let byte = memory.memory[registers.pc as usize];
         let (instruction, addressing_mode) = match_instruction(byte);
-        registers.pc += 1;
 
         let num_operands = num_operands_from_addressing(&addressing_mode) as u16;
 
         let ops = get_operands(&registers, &memory);
 
-        println!(
-            "{:?} {:x?} ({:#x})",
-            instruction,
-            ops,
-            address_from_bytes(ops.0, ops.1)
+        print!(
+            "{:X} {} ",
+            registers.pc, memory.memory[registers.pc as usize]
         );
+        print!("{} ", ops.0);
+        if num_operands >= 2 {
+            print!("{} ", ops.1);
+        }
+        print!("{:?}", instruction);
+
+        print!(
+            "A:{} X:{} Y:{} P:{} SP:{} PPU: SOMETHING, SOMETHING SOMETHING",
+            registers.a, registers.x, registers.y, registers.status, memory.stack_pointer
+        );
+
+        println!();
 
         match instruction {
             Instructions::SEI => {
