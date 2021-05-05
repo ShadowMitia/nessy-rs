@@ -6,7 +6,7 @@ mod rp2a03 {
     a is 8-bit accumulator register
     x is 8-bit X index register
     y is 8-bit Y index register
-    s is a 8-bit stack pointer, hardwired to memory page $01
+     is a 8-bit stack pointer, hardwired to memory page $01
     pc is a 16-bit program counter
     status hold processore flag bits (7 flags)
     */
@@ -126,6 +126,7 @@ mod rp2a03 {
             CPY,
             BNE,
             RTS,
+            JMP,
         }
 
         #[must_use]
@@ -202,6 +203,9 @@ mod rp2a03 {
                 0xD0 => (Instructions::BNE, AddressingMode::Relative),
                 // RTS
                 0x60 => (Instructions::RTS, AddressingMode::Implied),
+                // JMP
+                0x4C => (Instructions::JMP, AddressingMode::Absolute),
+                0x6C => (Instructions::JMP, AddressingMode::AbsoluteIndirect),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -646,6 +650,18 @@ mod rp2a03 {
             assert_eq!(registers.pc, 0x5);
         }
 
+        pub fn jmp(registers: &mut Registers, addr: u16) {
+            registers.pc = addr;
+        }
+
+        #[test]
+        fn jmp_test() {
+            let mut registers = Registers::new();
+
+            jmp(&mut registers, 0x42);
+            assert_eq!(registers.pc, 0x42);
+        }
+
         /**
         Applies addressing mode rules to operands and gives out 16-bit results
          */
@@ -663,7 +679,7 @@ mod rp2a03 {
                 AddressingMode::Immediate => Some(low_byte.unwrap().into()),
                 AddressingMode::Absolute => {
                     let addr = address_from_bytes(low_byte.unwrap(), high_byte.unwrap());
-                    Some(*memory.get(addr as usize).unwrap() as u16)
+                    Some(addr)
                 }
                 AddressingMode::ZeroPage => {
                     let addr = low_byte.unwrap();
@@ -776,7 +792,7 @@ mod rp2a03 {
                 Some(0x1),
                 Some(0x2),
             );
-            assert_eq!(res, Some(42));
+            assert_eq!(res, Some(0x0201));
 
             // ZERO PAGE
             memory.memory[0x0] = 43;
@@ -1078,32 +1094,45 @@ fn main() {
 
     // Set up registers
     let mut registers = Registers::new();
-    registers.pc = 0xC000;
+    registers.pc = 0xC000; // Becasue nestest starts here
 
     loop {
         let byte = memory.memory[registers.pc as usize];
         let (instruction, addressing_mode) = match_instruction(byte);
 
-        let num_operands = num_operands_from_addressing(&addressing_mode) as u16;
-
+        let mut num_operands = num_operands_from_addressing(&addressing_mode) as u16;
         let ops = get_operands(&registers, &memory);
 
         print!(
-            "{:X} {} ",
+            "{:4X} {:2X} ",
             registers.pc, memory.memory[registers.pc as usize]
         );
-        print!("{} ", ops.0);
+        print!("{:2X} ", ops.0);
         if num_operands >= 2 {
-            print!("{} ", ops.1);
+            print!("{:2X} ", ops.1);
+        } else {
+            print!("   ");
         }
-        print!("{:?}", instruction);
+        print!("{:4?} ", instruction);
 
         print!(
-            "A:{} X:{} Y:{} P:{} SP:{} PPU: SOMETHING, SOMETHING SOMETHING",
+            "A:{:2X} X:{:2X} Y:{:2X} P:{:2X} SP:{:4X} PPU: SOMETHING, SOMETHING SOMETHING",
             registers.a, registers.x, registers.y, registers.status, memory.stack_pointer
         );
 
         println!();
+
+        registers.pc += 1;
+
+        let (low_byte, high_byte) = ops;
+        let addr = apply_addressing(
+            &memory,
+            &registers,
+            addressing_mode,
+            Some(low_byte),
+            Some(high_byte),
+        )
+        .unwrap();
 
         match instruction {
             Instructions::SEI => {
@@ -1115,16 +1144,6 @@ fn main() {
                 registers.pc += num_operands;
             }
             Instructions::LDA => {
-                let (low_byte, high_byte) = get_operands(&registers, &memory);
-                let addr = apply_addressing(
-                    &memory,
-                    &registers,
-                    addressing_mode,
-                    Some(low_byte),
-                    Some(high_byte),
-                )
-                .unwrap();
-
                 lda(&mut registers, addr as u8);
                 registers.pc += num_operands;
             }
@@ -1134,44 +1153,15 @@ fn main() {
                 // TODO: Check if need to advance pc by 1, but probs not
             }
             Instructions::STA => {
-                let (low_byte, high_byte) = get_operands(&registers, &memory);
-                let addr = apply_addressing(
-                    &memory,
-                    &registers,
-                    addressing_mode,
-                    Some(low_byte),
-                    Some(high_byte),
-                )
-                .unwrap();
                 sta(&mut registers, &mut memory, addr);
                 registers.pc += num_operands;
             }
             Instructions::INC => {
-                let (low_byte, high_byte) = get_operands(&registers, &memory);
-                let addr = apply_addressing(
-                    &memory,
-                    &registers,
-                    addressing_mode,
-                    Some(low_byte),
-                    Some(high_byte),
-                )
-                .unwrap();
                 inc(&mut registers, &mut memory, addr);
                 registers.pc += num_operands;
             }
             Instructions::LDX => {
-                let (low_byte, high_byte) = get_operands(&registers, &memory);
-                let addr = apply_addressing(
-                    &memory,
-                    &registers,
-                    addressing_mode,
-                    Some(low_byte),
-                    Some(high_byte),
-                )
-                .unwrap();
-
                 ldx(&mut registers, addr as u8);
-
                 registers.pc += num_operands;
             }
             Instructions::TXS => {
@@ -1179,45 +1169,15 @@ fn main() {
                 registers.pc += num_operands;
             }
             Instructions::AND => {
-                let (low_byte, high_byte) = get_operands(&registers, &memory);
-                let addr = apply_addressing(
-                    &memory,
-                    &registers,
-                    addressing_mode,
-                    Some(low_byte),
-                    Some(high_byte),
-                )
-                .unwrap();
-
                 and(&mut registers, memory.memory[addr as usize]);
                 registers.pc += num_operands;
             }
             Instructions::BEQ => {
-                let (low_byte, high_byte) = get_operands(&registers, &memory);
-                let addr = apply_addressing(
-                    &memory,
-                    &registers,
-                    addressing_mode,
-                    Some(low_byte),
-                    Some(high_byte),
-                )
-                .unwrap();
-
                 if !beq(&mut registers, addr) {
                     registers.pc += num_operands;
                 }
             }
             Instructions::CPX => {
-                let (low_byte, high_byte) = get_operands(&registers, &memory);
-                let addr = apply_addressing(
-                    &memory,
-                    &registers,
-                    addressing_mode,
-                    Some(low_byte),
-                    Some(high_byte),
-                )
-                .unwrap();
-
                 cpx(&mut registers, &mut memory, addr);
                 registers.pc += num_operands;
             }
@@ -1226,16 +1186,6 @@ fn main() {
                 registers.pc += num_operands;
             }
             Instructions::BPL => {
-                let (low_byte, high_byte) = get_operands(&registers, &memory);
-                let addr = apply_addressing(
-                    &memory,
-                    &registers,
-                    addressing_mode,
-                    Some(low_byte),
-                    Some(high_byte),
-                )
-                .unwrap();
-
                 if !bpl(&mut registers, addr) {
                     registers.pc += num_operands;
                 }
@@ -1249,36 +1199,19 @@ fn main() {
                 registers.pc += num_operands;
             }
             Instructions::CPY => {
-                let (low_byte, high_byte) = get_operands(&registers, &memory);
-                let addr = apply_addressing(
-                    &memory,
-                    &registers,
-                    addressing_mode,
-                    Some(low_byte),
-                    Some(high_byte),
-                )
-                .unwrap();
-
                 cpy(&mut registers, &mut memory, addr);
                 registers.pc += num_operands;
             }
             Instructions::BNE => {
-                let (low_byte, high_byte) = get_operands(&registers, &memory);
-                let addr = apply_addressing(
-                    &memory,
-                    &registers,
-                    addressing_mode,
-                    Some(low_byte),
-                    Some(high_byte),
-                )
-                .unwrap();
-
                 if !bne(&mut registers, addr) {
                     registers.pc += num_operands;
                 }
             }
             Instructions::RTS => {
                 rts(&mut registers, &mut memory);
+            }
+            Instructions::JMP => {
+                jmp(&mut registers, addr);
             }
         }
     }
