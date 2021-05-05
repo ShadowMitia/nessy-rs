@@ -132,6 +132,7 @@ mod rp2a03 {
             NOP,
             SEC,
             BCS,
+            CLC
         }
 
         #[must_use]
@@ -223,6 +224,8 @@ mod rp2a03 {
                 0x38 => (Instructions::SEC, AddressingMode::Implied),
                 // BCS
                 0xB0 => (Instructions::BCS, AddressingMode::Relative),
+                // CLC
+                0x18 => (Instructions::CLC, AddressingMode::Implied),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -747,12 +750,27 @@ mod rp2a03 {
         fn bcs_test() {
             let mut registers = Registers::new();
 
+            registers.pc += 0xC72F;
+
             let _ = bcs(&mut registers, 0x20);
-            assert_eq!(registers.pc, 0x0);
+            assert_eq!(registers.pc, 0xC72F);
 
             registers.status |= 0x1;
+
             let _ = bcs(&mut registers, 0x4);
-            assert_eq!(registers.pc, 0x6);
+            assert_eq!(registers.pc, 0xC735);
+        }
+
+        pub fn clc(registers: &mut Registers) {
+            registers.status &= 0b11111110;
+        }
+
+        #[test]
+        fn clc_test() {
+            let mut registers = Registers::new();
+            registers.status = 0b1;
+            let _ = clc(&mut registers);
+            assert_eq!(registers.status, 0x0);
         }
 
         /**
@@ -830,7 +848,7 @@ mod rp2a03 {
                 AddressingMode::Immediate => 1,
                 AddressingMode::Absolute => 2,
                 AddressingMode::ZeroPage => 1,
-                AddressingMode::Relative => 2,
+                AddressingMode::Relative => 1,
                 AddressingMode::AbsoluteIndirect => 2,
                 AddressingMode::AbsoluteIndirectWithX => 2,
                 AddressingMode::AbsoluteIndirectWithY => 2,
@@ -1329,6 +1347,10 @@ fn main() {
                 if !bcs(&mut registers, addr) {
                     registers.pc += num_operands;
                 }
+            }
+            Instructions::CLC => {
+                clc(&mut registers);
+                registers.pc += num_operands;
             }
         }
     }
