@@ -128,6 +128,7 @@ mod rp2a03 {
             RTS,
             JMP,
             STX,
+            JSR,
         }
 
         #[must_use]
@@ -211,6 +212,8 @@ mod rp2a03 {
                 0x8E => (Instructions::STX, AddressingMode::Absolute),
                 0x86 => (Instructions::STX, AddressingMode::ZeroPage),
                 0x96 => (Instructions::STX, AddressingMode::ZeroPageIndexedWithY),
+                // JSR
+                0x20 => (Instructions::JSR, AddressingMode::Absolute),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -679,6 +682,22 @@ mod rp2a03 {
             registers.x = 0x42;
             stx(&mut registers, &mut memory, 0x30);
             assert_eq!(memory.memory[0x30], 0x42);
+        }
+
+        pub fn jsr(registers: &mut Registers, memory: &mut Memory, addr: u16) {
+            registers.pc += 2;
+            memory.stack_push(((registers.pc >> 8) & 0xFF) as u8);
+            memory.stack_push((registers.pc & 0xFF) as u8);
+            registers.pc = addr;
+        }
+
+        #[test]
+        fn jsr_test() {
+            let mut registers = Registers::new();
+            let mut memory = Memory::new();
+            registers.pc = 0x42;
+            jsr(&mut registers, &mut memory, 0x100);
+            assert_eq!(registers.pc, 0x100);
         }
 
         /**
@@ -1235,6 +1254,9 @@ fn main() {
             Instructions::STX => {
                 stx(&mut registers, &mut memory, addr);
                 registers.pc += num_operands;
+            }
+            Instructions::JSR => {
+                jsr(&mut registers, &mut memory, addr);
             }
         }
     }
