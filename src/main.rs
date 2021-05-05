@@ -129,6 +129,7 @@ mod rp2a03 {
             JMP,
             STX,
             JSR,
+            NOP,
         }
 
         #[must_use]
@@ -214,6 +215,8 @@ mod rp2a03 {
                 0x96 => (Instructions::STX, AddressingMode::ZeroPageIndexedWithY),
                 // JSR
                 0x20 => (Instructions::JSR, AddressingMode::Absolute),
+                // NOP
+                0xEA => (Instructions::NOP, AddressingMode::Implied),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -698,6 +701,13 @@ mod rp2a03 {
             registers.pc = 0x42;
             jsr(&mut registers, &mut memory, 0x100);
             assert_eq!(registers.pc, 0x100);
+        }
+
+        pub fn nop() {}
+
+        #[test]
+        fn nop_test() {
+            // HOW CAN I TEST THIS :D
         }
 
         /**
@@ -1257,6 +1267,10 @@ fn main() {
             }
             Instructions::JSR => {
                 jsr(&mut registers, &mut memory, addr);
+            }
+            Instructions::NOP => {
+                nop();
+                registers.pc += num_operands;
             }
         }
     }
