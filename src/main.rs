@@ -130,6 +130,7 @@ mod rp2a03 {
             STX,
             JSR,
             NOP,
+            SEC,
         }
 
         #[must_use]
@@ -217,6 +218,8 @@ mod rp2a03 {
                 0x20 => (Instructions::JSR, AddressingMode::Absolute),
                 // NOP
                 0xEA => (Instructions::NOP, AddressingMode::Implied),
+                // SEC
+                0x38 => (Instructions::SEC, AddressingMode::Implied),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -710,6 +713,18 @@ mod rp2a03 {
             // HOW CAN I TEST THIS :D
         }
 
+        pub fn sec(registers: &mut Registers) {
+            registers.status |= 0x1;
+        }
+
+        #[test]
+        fn sec_test() {
+            let mut registers = Registers::new();
+
+            sec(&mut registers);
+            assert_eq!(registers.status & 0x1, 0x1);
+        }
+
         /**
         Applies addressing mode rules to operands and gives out 16-bit results
          */
@@ -952,6 +967,8 @@ mod rp2a03 {
         }
     }
 }
+
+use core::num;
 
 use rp2a03::{instructions::*, Registers, *};
 
@@ -1270,6 +1287,10 @@ fn main() {
             }
             Instructions::NOP => {
                 nop();
+                registers.pc += num_operands;
+            }
+            Instructions::SEC => {
+                sec(&mut registers);
                 registers.pc += num_operands;
             }
         }
