@@ -143,6 +143,7 @@ mod rp2a03 {
             BVC,
             LDY,
             ASL,
+            RTI
         }
 
         #[must_use]
@@ -260,6 +261,8 @@ mod rp2a03 {
                 0x0A => (Instructions::ASL, AddressingMode::Accumulator),
                 0x06 => (Instructions::ASL, AddressingMode::ZeroPage),
                 0x16 => (Instructions::ASL, AddressingMode::ZeroPageIndexedWithX),
+                // RTI
+                0x40 => (Instructions::RTI, AddressingMode::Implied),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -984,6 +987,29 @@ mod rp2a03 {
             assert_eq!(memory.memory[0x2], 0x4);
         }
 
+        pub fn rti(registers: &mut Registers, memory: &mut Memory) {
+            let status = memory.stack_pop();
+            let pc_lsb = memory.stack_pop();
+            let pc_msb = memory.stack_pop();
+            let pc = address_from_bytes(pc_lsb, pc_msb);
+
+            registers.status = status;
+            registers.pc = pc;
+        }
+
+        #[test]
+        fn rti_test() {
+            let mut registers = Registers::new();
+            let mut memory = Memory::new();
+
+            memory.stack_push(0x0);
+            memory.stack_push(0x2);
+            memory.stack_push(0b10101010);
+            rti(&mut registers, &mut memory);
+            assert_eq!(registers.status, 0b10101010);
+            assert_eq!(registers.pc, 0x2);
+        }
+
         /**
         Applies addressing mode rules to operands and gives out 16-bit results
          */
@@ -1640,6 +1666,10 @@ fn main() {
             }
             Instructions::ASL => {
                 asl(&mut registers, &mut memory, bytes, addr);
+                registers.pc += num_operands;
+            }
+            Instructions::RTI => {
+                rti(&mut registers, &mut memory);
                 registers.pc += num_operands;
             }
         }
