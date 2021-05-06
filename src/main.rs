@@ -103,7 +103,7 @@ mod rp2a03 {
 
     pub mod instructions {
 
-        use std::mem;
+        use std::{mem, ops::Add};
 
         use crate::{address_from_bytes, BREAK_VECTOR_ADDDRESS, STACK_ADDRESS};
 
@@ -142,6 +142,7 @@ mod rp2a03 {
             BVS,
             BVC,
             LDY,
+            ASL,
         }
 
         #[must_use]
@@ -253,6 +254,12 @@ mod rp2a03 {
                 0xA0 => (Instructions::LDY, AddressingMode::Immediate),
                 0xA4 => (Instructions::LDY, AddressingMode::ZeroPage),
                 0xB4 => (Instructions::LDY, AddressingMode::ZeroPageIndexedWithX),
+                // ASL
+                0x0E => (Instructions::ASL, AddressingMode::Absolute),
+                0x1E => (Instructions::ASL, AddressingMode::AbsoluteIndirectWithX),
+                0x0A => (Instructions::ASL, AddressingMode::Accumulator),
+                0x06 => (Instructions::ASL, AddressingMode::ZeroPage),
+                0x16 => (Instructions::ASL, AddressingMode::ZeroPageIndexedWithX),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -949,6 +956,34 @@ mod rp2a03 {
             assert_eq!(registers.status & 0b10000000, 0b10000000);
         }
 
+        pub fn asl(registers: &mut Registers, memory: &mut Memory, addr: u16, val: u16) {
+            let mut m = val;
+            let c = (m & 0b10000000) as u8;
+
+            m <<= 1;
+            memory.memory[addr as usize] = m as u8;
+            registers.status |= c;
+
+            registers.status = if m == 0 {
+                registers.status | 0b00000010
+            } else {
+                registers.status & 0b11111101
+            };
+            registers.status = if m >= 0x80 {
+                registers.status | 0b10000000
+            } else {
+                registers.status & 0b01111111
+            };
+        }
+
+        #[test]
+        fn asl_test() {
+            let mut registers = Registers::new();
+            let mut memory = Memory::new();
+            asl(&mut registers, &mut memory, 0x2, 0x2);
+            assert_eq!(memory.memory[0x2], 0x4);
+        }
+
         /**
         Applies addressing mode rules to operands and gives out 16-bit results
          */
@@ -1432,6 +1467,7 @@ fn main() {
         let ops = get_operands(&registers, &memory);
 
         let (low_byte, high_byte) = ops;
+        let bytes = address_from_bytes(low_byte, high_byte);
         let addr = apply_addressing(
             &memory,
             &registers,
@@ -1600,6 +1636,10 @@ fn main() {
             }
             Instructions::LDY => {
                 ldy(&mut registers, addr as u8);
+                registers.pc += num_operands;
+            }
+            Instructions::ASL => {
+                asl(&mut registers, &mut memory, bytes, addr);
                 registers.pc += num_operands;
             }
         }
