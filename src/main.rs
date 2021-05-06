@@ -103,7 +103,9 @@ mod rp2a03 {
 
     pub mod instructions {
 
-        use crate::{BREAK_VECTOR_ADDDRESS, STACK_ADDRESS, address_from_bytes};
+        use std::mem;
+
+        use crate::{address_from_bytes, BREAK_VECTOR_ADDDRESS, STACK_ADDRESS};
 
         use super::*;
 
@@ -136,6 +138,7 @@ mod rp2a03 {
             CLC,
             BCC,
             PHP,
+            BIT,
         }
 
         #[must_use]
@@ -232,7 +235,12 @@ mod rp2a03 {
                 // BCC
                 0x90 => (Instructions::BCC, AddressingMode::Relative),
                 // PHP
-                0x48 => (Instructions::PHP, AddressingMode::Implied),
+                0x08 => (Instructions::PHP, AddressingMode::Implied),
+                // BIT
+                0x2C => (Instructions::BIT, AddressingMode::Absolute),
+                0x89 => (Instructions::BIT, AddressingMode::Immediate),
+                0x24 => (Instructions::BIT, AddressingMode::ZeroPage),
+
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -818,6 +826,36 @@ mod rp2a03 {
             registers.status = 0b10101010;
             php(&mut registers, &mut memory);
             assert_eq!(memory.memory[0x01FF], 0b10101010);
+        }
+
+        pub fn bit(registers: &mut Registers, memory: &mut Memory, addr: u16) {
+            let m = memory.memory[addr as usize];
+            let test = registers.a & m;
+            if test == 0 {
+                registers.status |= 0b00000010;
+            } else {
+                registers.status &= 0b11111101;
+            }
+
+            registers.status |= m & 0b11000000;
+        }
+
+        #[test]
+        fn bit_test() {
+            let mut registers = Registers::new();
+            let mut memory = Memory::new();
+            bit(&mut registers, &mut memory, 0x42);
+            assert_eq!(registers.status, 0b00000010);
+
+            memory.memory[0x42] = 0x1;
+            registers.a = 0x1;
+            bit(&mut registers, &mut memory, 0x42);
+            assert_eq!(registers.status, 0b00000000);
+
+            memory.memory[0x42] = 0xF2;
+            registers.a = 0xFF;
+            bit(&mut registers, &mut memory, 0x42);
+            assert_eq!(registers.status, 0b11000000);
         }
 
         /**
@@ -1453,6 +1491,10 @@ fn main() {
             }
             Instructions::PHP => {
                 php(&mut registers, &mut memory);
+                registers.pc += num_operands;
+            }
+            Instructions::BIT => {
+                bit(&mut registers, &mut memory, addr);
                 registers.pc += num_operands;
             }
         }
