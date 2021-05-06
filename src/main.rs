@@ -84,6 +84,7 @@ mod rp2a03 {
         assert_eq!(val, 0x42);
     }
 
+    #[derive(Debug, Clone)]
     pub enum AddressingMode {
         Accumulator,
         Implied,
@@ -132,7 +133,8 @@ mod rp2a03 {
             NOP,
             SEC,
             BCS,
-            CLC
+            CLC,
+            BCC,
         }
 
         #[must_use]
@@ -226,6 +228,8 @@ mod rp2a03 {
                 0xB0 => (Instructions::BCS, AddressingMode::Relative),
                 // CLC
                 0x18 => (Instructions::CLC, AddressingMode::Implied),
+                // BCC
+                0x90 => (Instructions::BCC, AddressingMode::Relative),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -733,13 +737,15 @@ mod rp2a03 {
 
         #[must_use]
         pub fn bcs(registers: &mut Registers, addr: u16) -> bool {
-            if registers.status & 0x1 == 0x1 {
+            if registers.status & 0x1 == 0b1 {
                 if addr >= 0x80 {
                     let value = (addr as i32 - (1 << 8)) as i16;
-                    registers.pc = 2 + (registers.pc as i16 + value) as u16;
+                    println!("value {:X} ", value);
+                    registers.pc = 1 + (registers.pc as i16 + value) as u16;
                 } else {
-                    registers.pc = 2 + (registers.pc as i16 + addr as i16) as u16;
+                    registers.pc = 1 + (registers.pc as i16 + addr as i16) as u16;
                 }
+                println!("new pc {:X} ", registers.pc);
                 true
             } else {
                 false
@@ -771,6 +777,33 @@ mod rp2a03 {
             registers.status = 0b1;
             let _ = clc(&mut registers);
             assert_eq!(registers.status, 0x0);
+        }
+
+        #[must_use]
+        pub fn bcc(registers: &mut Registers, addr: u16) -> bool {
+            if registers.status & 0x1 == 0x0 {
+                if addr >= 0x80 {
+                    let value = (addr as i32 - (1 << 8)) as i16;
+                    registers.pc = 2 + (registers.pc as i16 + value) as u16;
+                } else {
+                    registers.pc = 2 + (registers.pc as i16 + addr as i16) as u16;
+                }
+                true
+            } else {
+                false
+            }
+        }
+
+        #[test]
+        fn bcc_test() {
+            let mut registers = Registers::new();
+            registers.status = 0b1;
+            let _ = bcc(&mut registers, 0x42);
+            assert_eq!(registers.pc, 0x0);
+
+            registers.status = 0b0;
+            let _ = bcc(&mut registers, 0x42);
+            assert_eq!(registers.pc, 0x44);
         }
 
         /**
@@ -1016,8 +1049,6 @@ mod rp2a03 {
     }
 }
 
-use core::num;
-
 use rp2a03::{instructions::*, Registers, *};
 
 fn address_from_bytes(low_byte: u8, high_byte: u8) -> u16 {
@@ -1207,6 +1238,47 @@ fn main() {
 
     // Set up registers
     let mut registers = Registers::new();
+
+    /*
+        print!(
+        "{:4X} {:2X} ",
+        registers.pc, memory.memory[registers.pc as usize]
+    );
+    if num_operands > 0 {
+        print!("{:2X} ", ops.0);
+    } else {
+        print!("   ");
+    }
+    if num_operands >= 2 {
+        print!("{:2X} ", ops.1);
+    } else {
+        print!("   ");
+    }
+    print!("{:4?} ", instruction);
+
+    match num_operands {
+        1 => print!("{:4X} ", ops.0),
+        2 => print!(
+            "{:4X} ",
+            apply_addressing(
+                &memory,
+                &registers,
+                addressing_mode.clone(),
+                Some(ops.0),
+                Some(ops.1),
+            )
+            .unwrap_or(0)
+        ),
+        _ => print!("     "),
+    }
+
+    print!(
+        "A:{:2X} X:{:2X} Y:{:2X} P:{:2X} SP:{:4X} PPU: SOMETHING, SOMETHING SOMETHING",
+        registers.a, registers.x, registers.y, registers.status, memory.stack_pointer
+    );
+
+    println!();
+    */
     registers.pc = 0xC000; // Becasue nestest starts here
 
     loop {
@@ -1216,12 +1288,24 @@ fn main() {
         let num_operands = num_operands_from_addressing(&addressing_mode) as u16;
         let ops = get_operands(&registers, &memory);
 
+        let (low_byte, high_byte) = ops;
+        let addr = apply_addressing(
+            &memory,
+            &registers,
+            addressing_mode,
+            Some(low_byte),
+            Some(high_byte),
+        )
+        .unwrap_or(0);
+
         print!(
             "{:4X} {:2X} ",
             registers.pc, memory.memory[registers.pc as usize]
         );
         if num_operands > 0 {
             print!("{:2X} ", ops.0);
+        } else {
+            print!("   ");
         }
         if num_operands >= 2 {
             print!("{:2X} ", ops.1);
@@ -1229,6 +1313,12 @@ fn main() {
             print!("   ");
         }
         print!("{:4?} ", instruction);
+
+        match num_operands {
+            1 => print!("{:4X} ", ops.0),
+            2 => print!("{:4X} ", addr),
+            _ => print!("     "),
+        }
 
         print!(
             "A:{:2X} X:{:2X} Y:{:2X} P:{:2X} SP:{:4X} PPU: SOMETHING, SOMETHING SOMETHING",
@@ -1238,16 +1328,6 @@ fn main() {
         println!();
 
         registers.pc += 1;
-
-        let (low_byte, high_byte) = ops;
-        let mut addr = apply_addressing(
-            &memory,
-            &registers,
-            addressing_mode,
-            Some(low_byte),
-            Some(high_byte),
-        )
-        .unwrap_or(0);
 
         match instruction {
             Instructions::SEI => {
@@ -1351,6 +1431,11 @@ fn main() {
             Instructions::CLC => {
                 clc(&mut registers);
                 registers.pc += num_operands;
+            }
+            Instructions::BCC => {
+                if !bcc(&mut registers, addr) {
+                    registers.pc += num_operands;
+                }
             }
         }
     }
