@@ -140,7 +140,8 @@ mod rp2a03 {
             PHP,
             BIT,
             BVS,
-            BVC
+            BVC,
+            LDY,
         }
 
         #[must_use]
@@ -246,6 +247,12 @@ mod rp2a03 {
                 0x70 => (Instructions::BVS, AddressingMode::Relative),
                 //BVC
                 0x50 => (Instructions::BVC, AddressingMode::Relative),
+                // LDY
+                0xAC => (Instructions::LDY, AddressingMode::Absolute),
+                0xBC => (Instructions::LDY, AddressingMode::AbsoluteIndirectWithX),
+                0xA0 => (Instructions::LDY, AddressingMode::Immediate),
+                0xA4 => (Instructions::LDY, AddressingMode::ZeroPage),
+                0xB4 => (Instructions::LDY, AddressingMode::ZeroPageIndexedWithX),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -915,6 +922,33 @@ mod rp2a03 {
             assert_eq!(registers.pc, 0x44);
         }
 
+        pub fn ldy(registers: &mut Registers, operand: u8) {
+            registers.y = operand;
+            registers.status = if operand == 0 {
+                registers.status | 0b00000010
+            } else {
+                registers.status & 0b11111101
+            };
+            registers.status = if operand >= 0x80 {
+                registers.status | 0b10000000
+            } else {
+                registers.status & 0b01111111
+            };
+        }
+
+        #[test]
+        fn ldy_test() {
+            let mut registers = Registers::new();
+            ldy(&mut registers, 0x42);
+            assert_eq!(registers.y, 0x42);
+            ldy(&mut registers, 0x0);
+            assert_eq!(registers.y, 0x0);
+            assert_eq!(registers.status & 0b00000010, 0b00000010);
+            ldy(&mut registers, 0x80);
+            assert_eq!(registers.y, 0x80);
+            assert_eq!(registers.status & 0b10000000, 0b10000000);
+        }
+
         /**
         Applies addressing mode rules to operands and gives out 16-bit results
          */
@@ -1563,6 +1597,10 @@ fn main() {
                 if !bvc(&mut registers, addr) {
                     registers.pc += num_operands;
                 }
+            }
+            Instructions::LDY => {
+                ldy(&mut registers, addr as u8);
+                registers.pc += num_operands;
             }
         }
     }
