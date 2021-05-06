@@ -139,7 +139,8 @@ mod rp2a03 {
             BCC,
             PHP,
             BIT,
-            BVS
+            BVS,
+            BVC
         }
 
         #[must_use]
@@ -243,7 +244,8 @@ mod rp2a03 {
                 0x24 => (Instructions::BIT, AddressingMode::ZeroPage),
                 // BVS
                 0x70 => (Instructions::BVS, AddressingMode::Relative),
-
+                //BVC
+                0x50 => (Instructions::BVC, AddressingMode::Relative),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -883,6 +885,33 @@ mod rp2a03 {
 
             registers.status = 0b01000000;
             let _ = bvs(&mut registers, 0x42);
+            assert_eq!(registers.pc, 0x44);
+        }
+
+        pub fn bvc(registers: &mut Registers, addr: u16) -> bool {
+            if registers.status & 0b01000000 == 0b01000000 {
+                if addr >= 0x80 {
+                    let value = (addr as i32 - (1 << 8)) as i16;
+                    registers.pc = 2 + (registers.pc as i16 + value) as u16;
+                } else {
+                    registers.pc = 2 + (registers.pc as i16 + addr as i16) as u16;
+                }
+                true
+            } else {
+                false
+            }
+        }
+
+        #[test]
+        fn bvc_test() {
+            let mut registers = Registers::new();
+
+            registers.status = 0b01000000;
+            let _ = bvc(&mut registers, 0x42);
+            assert_eq!(registers.pc, 0x44);
+
+            registers.status = 0b00000000;
+            let _ = bvc(&mut registers, 0x42);
             assert_eq!(registers.pc, 0x44);
         }
 
@@ -1527,6 +1556,11 @@ fn main() {
             }
             Instructions::BVS => {
                 if !bvs(&mut registers, addr) {
+                    registers.pc += num_operands;
+                }
+            }
+            Instructions::BVC => {
+                if !bvc(&mut registers, addr) {
                     registers.pc += num_operands;
                 }
             }
