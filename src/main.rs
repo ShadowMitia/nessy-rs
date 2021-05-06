@@ -139,6 +139,7 @@ mod rp2a03 {
             BCC,
             PHP,
             BIT,
+            BVS
         }
 
         #[must_use]
@@ -240,6 +241,8 @@ mod rp2a03 {
                 0x2C => (Instructions::BIT, AddressingMode::Absolute),
                 0x89 => (Instructions::BIT, AddressingMode::Immediate),
                 0x24 => (Instructions::BIT, AddressingMode::ZeroPage),
+                // BVS
+                0x70 => (Instructions::BVS, AddressingMode::Relative),
 
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
@@ -856,6 +859,31 @@ mod rp2a03 {
             registers.a = 0xFF;
             bit(&mut registers, &mut memory, 0x42);
             assert_eq!(registers.status, 0b11000000);
+        }
+
+        pub fn bvs(registers: &mut Registers, addr: u16) -> bool {
+            if registers.status & 0b01000000 == 0b01000000 {
+                if addr >= 0x80 {
+                    let value = (addr as i32 - (1 << 8)) as i16;
+                    registers.pc = 2 + (registers.pc as i16 + value) as u16;
+                } else {
+                    registers.pc = 2 + (registers.pc as i16 + addr as i16) as u16;
+                }
+                true
+            } else {
+                false
+            }
+        }
+
+        #[test]
+        fn bvs_test() {
+            let mut registers = Registers::new();
+            let _ = bvs(&mut registers, 0x42);
+            assert_eq!(registers.pc, 0x0);
+
+            registers.status = 0b01000000;
+            let _ = bvs(&mut registers, 0x42);
+            assert_eq!(registers.pc, 0x44);
         }
 
         /**
@@ -1496,6 +1524,11 @@ fn main() {
             Instructions::BIT => {
                 bit(&mut registers, &mut memory, addr);
                 registers.pc += num_operands;
+            }
+            Instructions::BVS => {
+                if !bvs(&mut registers, addr) {
+                    registers.pc += num_operands;
+                }
             }
         }
     }
