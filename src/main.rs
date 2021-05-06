@@ -103,7 +103,7 @@ mod rp2a03 {
 
     pub mod instructions {
 
-        use crate::{address_from_bytes, BREAK_VECTOR_ADDDRESS};
+        use crate::{BREAK_VECTOR_ADDDRESS, STACK_ADDRESS, address_from_bytes};
 
         use super::*;
 
@@ -135,6 +135,7 @@ mod rp2a03 {
             BCS,
             CLC,
             BCC,
+            PHP,
         }
 
         #[must_use]
@@ -230,6 +231,8 @@ mod rp2a03 {
                 0x18 => (Instructions::CLC, AddressingMode::Implied),
                 // BCC
                 0x90 => (Instructions::BCC, AddressingMode::Relative),
+                // PHP
+                0x48 => (Instructions::PHP, AddressingMode::Implied),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -740,12 +743,10 @@ mod rp2a03 {
             if registers.status & 0x1 == 0b1 {
                 if addr >= 0x80 {
                     let value = (addr as i32 - (1 << 8)) as i16;
-                    println!("value {:X} ", value);
-                    registers.pc = 1 + (registers.pc as i16 + value) as u16;
+                    registers.pc = 2 + (registers.pc as i16 + value) as u16;
                 } else {
-                    registers.pc = 1 + (registers.pc as i16 + addr as i16) as u16;
+                    registers.pc = 2 + (registers.pc as i16 + addr as i16) as u16;
                 }
-                println!("new pc {:X} ", registers.pc);
                 true
             } else {
                 false
@@ -804,6 +805,19 @@ mod rp2a03 {
             registers.status = 0b0;
             let _ = bcc(&mut registers, 0x42);
             assert_eq!(registers.pc, 0x44);
+        }
+
+        pub fn php(registers: &mut Registers, memory: &mut Memory) {
+            memory.stack_push(registers.status);
+        }
+
+        #[test]
+        fn php_test() {
+            let mut registers = Registers::new();
+            let mut memory = Memory::new();
+            registers.status = 0b10101010;
+            php(&mut registers, &mut memory);
+            assert_eq!(memory.memory[0x01FF], 0b10101010);
         }
 
         /**
@@ -1436,6 +1450,10 @@ fn main() {
                 if !bcc(&mut registers, addr) {
                     registers.pc += num_operands;
                 }
+            }
+            Instructions::PHP => {
+                php(&mut registers, &mut memory);
+                registers.pc += num_operands;
             }
         }
     }
