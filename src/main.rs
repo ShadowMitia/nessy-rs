@@ -19,6 +19,18 @@ mod rp2a03 {
         pub status: u8,
     }
 
+    #[repr(u8)]
+    #[derive(Debug, Clone)]
+    pub enum StatusFlag {
+        N = 7,
+        V = 6,
+        B = 4,
+        D = 3,
+        I = 2,
+        Z = 1,
+        C = 0,
+    }
+
     impl Registers {
         pub fn new() -> Self {
             Self {
@@ -29,6 +41,19 @@ mod rp2a03 {
                 pc: 0,
                 status: 0,
             }
+        }
+
+        pub fn set_flag(&mut self, flag: StatusFlag, activated: bool) {
+            if activated {
+                self.status |= 0x1 << flag as u8;
+            } else {
+                self.status &= !(0x1 << flag as u8);
+            }
+        }
+
+        pub fn is_flag_set(&mut self, flag: StatusFlag) -> bool {
+            let val = 0x1 << flag as u8;
+            self.status & val == val
         }
     }
 
@@ -61,14 +86,14 @@ mod rp2a03 {
         }
 
         pub fn stack_push(&mut self, val: u8) {
-            self.memory[self.stack_pointer as usize] = val;
+            self.memory[0x100 | self.stack_pointer as usize] = val;
             self.stack_pointer -= 1;
         }
 
         #[must_use]
         pub fn stack_pop(&mut self) -> u8 {
             self.stack_pointer += 1;
-            self.memory[self.stack_pointer as usize]
+            self.memory[0x100 | self.stack_pointer as usize]
         }
     }
 
@@ -102,8 +127,6 @@ mod rp2a03 {
     }
 
     pub mod instructions {
-
-        use std::{mem, ops::Add};
 
         use crate::{address_from_bytes, BREAK_VECTOR_ADDDRESS, STACK_ADDRESS};
 
@@ -143,7 +166,7 @@ mod rp2a03 {
             BVC,
             LDY,
             ASL,
-            RTI
+            RTI,
         }
 
         #[must_use]
@@ -274,6 +297,7 @@ mod rp2a03 {
         #[test]
         fn sei_test() {
             let mut registers = Registers::new();
+            registers.pc += 1; // Simulate reading insruction
             sei(&mut registers);
             assert_eq!(registers.status, 0b00000100);
         }
@@ -286,6 +310,7 @@ mod rp2a03 {
         fn cld_test() {
             let mut registers = Registers::new();
             registers.status |= 0b00001000;
+            registers.pc += 1; // Simulate reading insruction
             cld(&mut registers);
             assert_eq!(registers.status, 0b00000000);
         }
@@ -307,11 +332,14 @@ mod rp2a03 {
         #[test]
         fn lda_test() {
             let mut registers = Registers::new();
+            registers.pc += 1; // Simulate reading insruction
             lda(&mut registers, 0x42);
             assert_eq!(registers.a, 0x42);
+            registers.pc += 1; // Simulate reading insruction
             lda(&mut registers, 0x0);
             assert_eq!(registers.a, 0x0);
             assert_eq!(registers.status & 0b00000010, 0b00000010);
+            registers.pc += 1; // Simulate reading insruction
             lda(&mut registers, 0x80);
             assert_eq!(registers.a, 0x80);
             assert_eq!(registers.status & 0b10000000, 0b10000000);
@@ -335,10 +363,10 @@ mod rp2a03 {
             let mut memory = Memory::new();
             memory.memory[BREAK_VECTOR_ADDDRESS as usize] = 0x42;
             memory.memory[(BREAK_VECTOR_ADDDRESS + 1) as usize] = 0x0;
-
+            registers.pc += 1; // Simulate reading insruction
             brk(&mut registers, &mut memory);
             assert_eq!(registers.status, 0b00010100);
-            assert_eq!(memory.memory[0x01FE], 2);
+            assert_eq!(memory.memory[0x01FE], 3);
             assert_eq!(memory.memory[0x01FF], 0);
             assert_eq!(registers.pc, 0x42);
         }
@@ -352,6 +380,7 @@ mod rp2a03 {
             let mut registers = Registers::new();
             let mut memory = Memory::new();
             registers.a = 0x42;
+            registers.pc += 1; // Simulate reading insruction
             sta(&mut registers, &mut memory, 0x12);
             assert_eq!(memory.memory[0x12], 0x42);
         }
@@ -379,6 +408,7 @@ mod rp2a03 {
             let mut memory = Memory::new();
 
             memory.memory[0x0] = 41;
+            registers.pc += 1; // Simulate reading insruction
             inc(&mut registers, &mut memory, 0x0);
             assert_eq!(memory.memory[0x0], 42);
         }
@@ -400,11 +430,14 @@ mod rp2a03 {
         #[test]
         fn ldx_test() {
             let mut registers = Registers::new();
+            registers.pc += 1; // Simulate reading insruction
             ldx(&mut registers, 0x42);
             assert_eq!(registers.x, 0x42);
+            registers.pc += 1; // Simulate reading insruction
             ldx(&mut registers, 0x0);
             assert_eq!(registers.x, 0x0);
             assert_eq!(registers.status & 0b00000010, 0b00000010);
+            registers.pc += 1; // Simulate reading insruction
             ldx(&mut registers, 0x80);
             assert_eq!(registers.x, 0x80);
             assert_eq!(registers.status & 0b10000000, 0b10000000);
@@ -420,6 +453,7 @@ mod rp2a03 {
             let mut memory = Memory::new();
 
             registers.x = 42;
+            registers.pc += 1; // Simulate reading insruction
             txs(&mut registers, &mut memory);
 
             assert_eq!(memory.memory[0x01FF], 42);
@@ -436,11 +470,13 @@ mod rp2a03 {
 
             registers.a = 0b00000001;
             memory.memory[0x1] = 0b00000001;
+            registers.pc += 1; // Simulate reading insruction
             and(&mut registers, 0x1);
             assert_eq!(registers.a, 1);
 
             registers.a = 0b00000000;
             memory.memory[0x1] = 0b00000001;
+            registers.pc += 1; // Simulate reading insruction
             and(&mut registers, 0x1);
             assert_eq!(registers.a, 0);
         }
@@ -451,9 +487,9 @@ mod rp2a03 {
             if (registers.status & 0b00000010) == 0b00000010 {
                 if value >= 0x80 {
                     let value = (value as i32 - (1 << 8)) as i16;
-                    registers.pc = 2 + (registers.pc as i16 + value) as u16;
+                    registers.pc = 1 + (registers.pc as i16 + value) as u16;
                 } else {
-                    registers.pc = 2 + (registers.pc as i16 + value as i16) as u16;
+                    registers.pc = 1 + (registers.pc as i16 + value as i16) as u16;
                 }
                 true
             } else {
@@ -466,16 +502,19 @@ mod rp2a03 {
             let mut registers = Registers::new();
 
             registers.status = 0b00000000;
+            registers.pc += 1; // Simulate reading insruction
             let _ = beq(&mut registers, 0x10);
-            assert_eq!(registers.pc, 0x0);
+            assert_eq!(registers.pc, 0x1);
 
             registers.pc = 0x0;
             registers.status = 0b00000010;
+            registers.pc += 1; // Simulate reading insruction
             let _ = beq(&mut registers, 0x10);
             assert_eq!(registers.pc, 0x12);
 
             registers.pc = 0x43;
             registers.status = 0b00000010;
+            registers.pc += 1; // Simulate reading insruction
             let _ = beq(&mut registers, 0xFD);
             assert_eq!(registers.pc, 0x42);
         }
@@ -505,21 +544,25 @@ mod rp2a03 {
 
             registers.x = 0x10;
             memory.memory[0x42] = 0x10;
+            registers.pc += 1; // Simulate reading insruction
             cpx(&mut registers, &mut memory, 0x42);
             assert_eq!(registers.status, 0b00000011);
 
             registers.x = 0x9;
             memory.memory[0x42] = 0x10;
+            registers.pc += 1; // Simulate reading insruction
             cpx(&mut registers, &mut memory, 0x42);
             assert_eq!(registers.status, 0b10000000);
 
             registers.x = 0x10;
             memory.memory[0x42] = 0x9;
+            registers.pc += 1; // Simulate reading insruction
             cpx(&mut registers, &mut memory, 0x42);
             assert_eq!(registers.status, 0b00000001);
 
             registers.x = 0xFF;
             memory.memory[0x42] = 0x10;
+            registers.pc += 1; // Simulate reading insruction
             cpx(&mut registers, &mut memory, 0x42);
             assert_eq!(registers.status, 0b00000001);
         }
@@ -544,10 +587,12 @@ mod rp2a03 {
             let mut registers = Registers::new();
 
             registers.y = 0x43;
+            registers.pc += 1; // Simulate reading insruction
             dey(&mut registers);
             assert_eq!(registers.y, 0x42);
 
             registers.y = 0x0;
+            registers.pc += 1; // Simulate reading insruction
             dey(&mut registers);
             assert_eq!(registers.y, 0xFF);
         }
@@ -558,9 +603,9 @@ mod rp2a03 {
             if (registers.status & 0b10000000) == 0b00000000 {
                 if value >= 0x80 {
                     let value = (value as i32 - (1 << 8)) as i16;
-                    registers.pc = 2 + (registers.pc as i16 + value) as u16;
+                    registers.pc = 1 + (registers.pc as i16 + value) as u16;
                 } else {
-                    registers.pc = 2 + (registers.pc as i16 + value as i16) as u16;
+                    registers.pc = 1 + (registers.pc as i16 + value as i16) as u16;
                 }
                 true
             } else {
@@ -573,10 +618,12 @@ mod rp2a03 {
             let mut registers = Registers::new();
 
             registers.y = 0x43;
+            registers.pc += 1; // Simulate reading insruction
             dey(&mut registers);
             assert_eq!(registers.y, 0x42);
 
             registers.y = 0x0;
+            registers.pc += 1; // Simulate reading insruction
             dey(&mut registers);
             assert_eq!(registers.y, 0xFF);
         }
@@ -591,6 +638,7 @@ mod rp2a03 {
             let mut memory = Memory::new();
 
             memory.stack_push(0x42);
+            registers.pc += 1; // Simulate reading insruction
             apl(&mut registers, &mut memory);
             assert_eq!(registers.a, 0x42);
         }
@@ -614,6 +662,7 @@ mod rp2a03 {
             let mut registers = Registers::new();
             registers.y = 0x42;
 
+            registers.pc += 1; // Simulate reading insruction
             tay(&mut registers);
             assert_eq!(registers.a, 0x42);
         }
@@ -643,29 +692,32 @@ mod rp2a03 {
 
             registers.y = 0x10;
             memory.memory[0x42] = 0x10;
+            registers.pc += 1; // Simulate reading insruction
             cpy(&mut registers, &mut memory, 0x42);
             assert_eq!(registers.status, 0b00000011);
 
             registers.y = 0x9;
             memory.memory[0x42] = 0x10;
+            registers.pc += 1; // Simulate reading insruction
             cpy(&mut registers, &mut memory, 0x42);
             assert_eq!(registers.status, 0b10000000);
 
             registers.y = 0xFF;
             memory.memory[0x42] = 0x10;
+            registers.pc += 1; // Simulate reading insruction
             cpy(&mut registers, &mut memory, 0x42);
             assert_eq!(registers.status, 0b00000001);
         }
 
         #[must_use]
         pub fn bne(registers: &mut Registers, value: u16) -> bool {
-            // Check if zero flag is enabled
-            if (registers.status & 0b00000010) == 0b00000010 {
+            // Check if zero flag is not enabled
+            if !registers.is_flag_set(StatusFlag::Z) {
                 if value >= 0x80 {
                     let value = (value as i32 - (1 << 8)) as i16;
-                    registers.pc = 2 + (registers.pc as i16 + value) as u16;
+                    registers.pc = 1 + (registers.pc as i16 + value) as u16;
                 } else {
-                    registers.pc = 2 + (registers.pc as i16 + value as i16) as u16;
+                    registers.pc = 1 + (registers.pc as i16 + value as i16) as u16;
                 }
                 true
             } else {
@@ -678,10 +730,13 @@ mod rp2a03 {
             let mut registers = Registers::new();
 
             registers.status = 0b00000010;
+            registers.pc += 1; // Simulate reading insruction
             let _ = bne(&mut registers, 0x10);
-            assert_eq!(registers.pc, 0x12);
+            assert_eq!(registers.pc, 0x1);
 
             registers.status = 0b00000000;
+            registers.pc = 0;
+            registers.pc += 1; // Simulate reading insruction
             let _ = bne(&mut registers, 0x10);
             assert_eq!(registers.pc, 0x12);
         }
@@ -690,7 +745,6 @@ mod rp2a03 {
             let low = memory.stack_pop();
             let high = memory.stack_pop();
             let addr = address_from_bytes(low, high);
-            println!("{val:b} {val}", val = addr);
             registers.pc = addr;
             registers.pc += 1;
         }
@@ -703,6 +757,7 @@ mod rp2a03 {
             memory.stack_push(0x0);
             memory.stack_push(0x4);
 
+            registers.pc += 1; // Simulate reading insruction
             rts(&mut registers, &mut memory);
             assert_eq!(registers.pc, 0x5);
         }
@@ -715,6 +770,7 @@ mod rp2a03 {
         fn jmp_test() {
             let mut registers = Registers::new();
 
+            registers.pc += 1; // Simulate reading insruction
             jmp(&mut registers, 0x42);
             assert_eq!(registers.pc, 0x42);
         }
@@ -729,12 +785,13 @@ mod rp2a03 {
             let mut memory = Memory::new();
 
             registers.x = 0x42;
+            registers.pc += 1; // Simulate reading insruction
             stx(&mut registers, &mut memory, 0x30);
             assert_eq!(memory.memory[0x30], 0x42);
         }
 
         pub fn jsr(registers: &mut Registers, memory: &mut Memory, addr: u16) {
-            registers.pc += 2;
+            registers.pc += 1;
             memory.stack_push(((registers.pc >> 8) & 0xFF) as u8);
             memory.stack_push((registers.pc & 0xFF) as u8);
             registers.pc = addr;
@@ -745,6 +802,7 @@ mod rp2a03 {
             let mut registers = Registers::new();
             let mut memory = Memory::new();
             registers.pc = 0x42;
+            registers.pc += 1; // Simulate reading insruction
             jsr(&mut registers, &mut memory, 0x100);
             assert_eq!(registers.pc, 0x100);
         }
@@ -764,18 +822,19 @@ mod rp2a03 {
         fn sec_test() {
             let mut registers = Registers::new();
 
+            registers.pc += 1; // Simulate reading insruction
             sec(&mut registers);
             assert_eq!(registers.status & 0x1, 0x1);
         }
 
         #[must_use]
         pub fn bcs(registers: &mut Registers, addr: u16) -> bool {
-            if registers.status & 0x1 == 0b1 {
+            if registers.is_flag_set(StatusFlag::C) {
                 if addr >= 0x80 {
                     let value = (addr as i32 - (1 << 8)) as i16;
-                    registers.pc = 2 + (registers.pc as i16 + value) as u16;
+                    registers.pc = 1 + (registers.pc as i16 + value) as u16;
                 } else {
-                    registers.pc = 2 + (registers.pc as i16 + addr as i16) as u16;
+                    registers.pc = 1 + (registers.pc as i16 + addr as i16) as u16;
                 }
                 true
             } else {
@@ -789,11 +848,14 @@ mod rp2a03 {
 
             registers.pc += 0xC72F;
 
+            registers.pc += 1; // Simulate reading instruction
             let _ = bcs(&mut registers, 0x20);
-            assert_eq!(registers.pc, 0xC72F);
+            assert_eq!(registers.pc, 0xC730);
 
             registers.status |= 0x1;
 
+            registers.pc = 0xC72F;
+            registers.pc += 1; // Simulate reading insruction
             let _ = bcs(&mut registers, 0x4);
             assert_eq!(registers.pc, 0xC735);
         }
@@ -806,18 +868,19 @@ mod rp2a03 {
         fn clc_test() {
             let mut registers = Registers::new();
             registers.status = 0b1;
+            registers.pc += 1; // Simulate reading insruction
             let _ = clc(&mut registers);
             assert_eq!(registers.status, 0x0);
         }
 
         #[must_use]
         pub fn bcc(registers: &mut Registers, addr: u16) -> bool {
-            if registers.status & 0x1 == 0x0 {
+            if !registers.is_flag_set(StatusFlag::C) {
                 if addr >= 0x80 {
                     let value = (addr as i32 - (1 << 8)) as i16;
-                    registers.pc = 2 + (registers.pc as i16 + value) as u16;
+                    registers.pc = 1 + (registers.pc as i16 + value) as u16;
                 } else {
-                    registers.pc = 2 + (registers.pc as i16 + addr as i16) as u16;
+                    registers.pc = 1 + (registers.pc as i16 + addr as i16) as u16;
                 }
                 true
             } else {
@@ -829,12 +892,21 @@ mod rp2a03 {
         fn bcc_test() {
             let mut registers = Registers::new();
             registers.status = 0b1;
+            registers.pc += 1; // Simulate reading insruction
             let _ = bcc(&mut registers, 0x42);
-            assert_eq!(registers.pc, 0x0);
+            assert_eq!(registers.pc, 0x1);
 
             registers.status = 0b0;
+            registers.pc = 0;
+            registers.pc += 1; // Simulate reading insruction
             let _ = bcc(&mut registers, 0x42);
             assert_eq!(registers.pc, 0x44);
+
+            registers.status = 0b0;
+            registers.pc = 0xC74D;
+            registers.pc += 1; // Simulate reading insruction
+            let _ = bcc(&mut registers, 0x4);
+            assert_eq!(registers.pc, 0xC753);
         }
 
         pub fn php(registers: &mut Registers, memory: &mut Memory) {
@@ -846,6 +918,7 @@ mod rp2a03 {
             let mut registers = Registers::new();
             let mut memory = Memory::new();
             registers.status = 0b10101010;
+            registers.pc += 1; // Simulate reading insruction
             php(&mut registers, &mut memory);
             assert_eq!(memory.memory[0x01FF], 0b10101010);
         }
@@ -854,39 +927,44 @@ mod rp2a03 {
             let m = memory.memory[addr as usize];
             let test = registers.a & m;
             if test == 0 {
-                registers.status |= 0b00000010;
+                registers.set_flag(StatusFlag::Z, true);
             } else {
-                registers.status &= 0b11111101;
+                registers.set_flag(StatusFlag::Z, false);
             }
-
-            registers.status |= m & 0b11000000;
+            let v = m & 0b01000000 == 0b01000000;
+            registers.set_flag(StatusFlag::V, v);
+            let n = m & 0b10000000 == 0b10000000;
+            registers.set_flag(StatusFlag::N, n);
         }
 
         #[test]
         fn bit_test() {
             let mut registers = Registers::new();
             let mut memory = Memory::new();
+            registers.pc += 1; // Simulate reading insruction
             bit(&mut registers, &mut memory, 0x42);
             assert_eq!(registers.status, 0b00000010);
 
             memory.memory[0x42] = 0x1;
             registers.a = 0x1;
+            registers.pc += 1; // Simulate reading insruction
             bit(&mut registers, &mut memory, 0x42);
             assert_eq!(registers.status, 0b00000000);
 
             memory.memory[0x42] = 0xF2;
             registers.a = 0xFF;
+            registers.pc += 1; // Simulate reading insruction
             bit(&mut registers, &mut memory, 0x42);
             assert_eq!(registers.status, 0b11000000);
         }
 
         pub fn bvs(registers: &mut Registers, addr: u16) -> bool {
-            if registers.status & 0b01000000 == 0b01000000 {
+            if registers.is_flag_set(StatusFlag::V) {
                 if addr >= 0x80 {
                     let value = (addr as i32 - (1 << 8)) as i16;
-                    registers.pc = 2 + (registers.pc as i16 + value) as u16;
+                    registers.pc = 1 + (registers.pc as i16 + value) as u16;
                 } else {
-                    registers.pc = 2 + (registers.pc as i16 + addr as i16) as u16;
+                    registers.pc = 1 + (registers.pc as i16 + addr as i16) as u16;
                 }
                 true
             } else {
@@ -897,21 +975,24 @@ mod rp2a03 {
         #[test]
         fn bvs_test() {
             let mut registers = Registers::new();
+            registers.pc += 1; // Simulate reading insruction
             let _ = bvs(&mut registers, 0x42);
-            assert_eq!(registers.pc, 0x0);
+            assert_eq!(registers.pc, 0x1);
 
             registers.status = 0b01000000;
+            registers.pc = 0;
+            registers.pc += 1; // Simulate reading insruction
             let _ = bvs(&mut registers, 0x42);
             assert_eq!(registers.pc, 0x44);
         }
 
         pub fn bvc(registers: &mut Registers, addr: u16) -> bool {
-            if registers.status & 0b01000000 == 0b01000000 {
+            if !registers.is_flag_set(StatusFlag::V) {
                 if addr >= 0x80 {
                     let value = (addr as i32 - (1 << 8)) as i16;
-                    registers.pc = 2 + (registers.pc as i16 + value) as u16;
+                    registers.pc = 1 + (registers.pc as i16 + value) as u16;
                 } else {
-                    registers.pc = 2 + (registers.pc as i16 + addr as i16) as u16;
+                    registers.pc = 1 + (registers.pc as i16 + addr as i16) as u16;
                 }
                 true
             } else {
@@ -924,36 +1005,42 @@ mod rp2a03 {
             let mut registers = Registers::new();
 
             registers.status = 0b01000000;
+            registers.pc += 1; // Simulate reading insruction
             let _ = bvc(&mut registers, 0x42);
-            assert_eq!(registers.pc, 0x44);
+            assert_eq!(registers.pc, 0x1);
 
             registers.status = 0b00000000;
+            registers.pc = 0;
+            registers.pc += 1; // Simulate reading insruction
             let _ = bvc(&mut registers, 0x42);
             assert_eq!(registers.pc, 0x44);
         }
 
         pub fn ldy(registers: &mut Registers, operand: u8) {
             registers.y = operand;
-            registers.status = if operand == 0 {
-                registers.status | 0b00000010
+            if operand == 0 {
+                registers.set_flag(StatusFlag::Z, true);
             } else {
-                registers.status & 0b11111101
+                registers.set_flag(StatusFlag::Z, false);
             };
-            registers.status = if operand >= 0x80 {
-                registers.status | 0b10000000
+            if operand >= 0x80 {
+                registers.set_flag(StatusFlag::N, true);
             } else {
-                registers.status & 0b01111111
+                registers.set_flag(StatusFlag::N, false);
             };
         }
 
         #[test]
         fn ldy_test() {
             let mut registers = Registers::new();
+            registers.pc += 1; // Simulate reading insruction
             ldy(&mut registers, 0x42);
             assert_eq!(registers.y, 0x42);
+            registers.pc += 1; // Simulate reading insruction
             ldy(&mut registers, 0x0);
             assert_eq!(registers.y, 0x0);
             assert_eq!(registers.status & 0b00000010, 0b00000010);
+            registers.pc += 1; // Simulate reading insruction
             ldy(&mut registers, 0x80);
             assert_eq!(registers.y, 0x80);
             assert_eq!(registers.status & 0b10000000, 0b10000000);
@@ -967,15 +1054,15 @@ mod rp2a03 {
             memory.memory[addr as usize] = m as u8;
             registers.status |= c;
 
-            registers.status = if m == 0 {
-                registers.status | 0b00000010
+            if m == 0 {
+                registers.set_flag(StatusFlag::Z, true);
             } else {
-                registers.status & 0b11111101
+                registers.set_flag(StatusFlag::Z, false);
             };
-            registers.status = if m >= 0x80 {
-                registers.status | 0b10000000
+            if m >= 0x80 {
+                registers.set_flag(StatusFlag::N, true);
             } else {
-                registers.status & 0b01111111
+                registers.set_flag(StatusFlag::N, false);
             };
         }
 
@@ -983,6 +1070,7 @@ mod rp2a03 {
         fn asl_test() {
             let mut registers = Registers::new();
             let mut memory = Memory::new();
+            registers.pc += 1; // Simulate reading insruction
             asl(&mut registers, &mut memory, 0x2, 0x2);
             assert_eq!(memory.memory[0x2], 0x4);
         }
@@ -1005,6 +1093,7 @@ mod rp2a03 {
             memory.stack_push(0x0);
             memory.stack_push(0x2);
             memory.stack_push(0b10101010);
+            registers.pc += 1; // Simulate reading insruction
             rti(&mut registers, &mut memory);
             assert_eq!(registers.status, 0b10101010);
             assert_eq!(registers.pc, 0x2);
@@ -1017,61 +1106,60 @@ mod rp2a03 {
             memory: &Memory,
             registers: &Registers,
             adressing_mode: AddressingMode,
-            low_byte: Option<u8>,
-            high_byte: Option<u8>,
+            low_byte: u8,
+            high_byte: u8,
         ) -> Option<u16> {
             let memory = &memory.memory;
             let addr = match adressing_mode {
                 AddressingMode::Accumulator => None,
                 AddressingMode::Implied => None,
-                AddressingMode::Immediate => Some(low_byte.unwrap().into()),
+                AddressingMode::Immediate => Some(low_byte.into()),
                 AddressingMode::Absolute => {
-                    let addr = address_from_bytes(low_byte.unwrap(), high_byte.unwrap());
+                    let addr = address_from_bytes(low_byte, high_byte);
                     Some(addr)
                 }
                 AddressingMode::ZeroPage => {
-                    let addr = low_byte.unwrap();
+                    let addr = low_byte;
                     Some(*memory.get(addr as usize).unwrap() as u16)
                 }
-                AddressingMode::Relative => Some(low_byte.unwrap() as u16),
+                AddressingMode::Relative => Some(low_byte as u16),
                 AddressingMode::AbsoluteIndirect => {
-                    let addr = address_from_bytes(low_byte.unwrap(), high_byte.unwrap());
-                    let addr2 = address_from_bytes(low_byte.unwrap() + 1, high_byte.unwrap());
+                    let addr = address_from_bytes(low_byte, high_byte);
+                    let addr2 = addr + 1;
                     Some(address_from_bytes(
                         memory[addr as usize],
                         memory[addr2 as usize],
                     ))
                 }
                 AddressingMode::AbsoluteIndirectWithX => {
-                    let addr = address_from_bytes(low_byte.unwrap(), high_byte.unwrap())
-                        + registers.x as u16;
+                    let addr = address_from_bytes(low_byte, high_byte) + registers.x as u16;
                     Some(*memory.get(addr as usize).unwrap() as u16)
                 }
                 AddressingMode::AbsoluteIndirectWithY => {
-                    let addr = address_from_bytes(low_byte.unwrap(), high_byte.unwrap())
-                        + registers.y as u16;
+                    let addr = address_from_bytes(low_byte, high_byte) + registers.y as u16;
                     Some(*memory.get(addr as usize).unwrap() as u16)
                 }
                 AddressingMode::ZeroPageIndexedWithX => {
-                    let addr = low_byte.unwrap() + registers.x;
+                    let addr = low_byte + registers.x;
                     Some(*memory.get(addr as usize).unwrap() as u16)
                 }
                 AddressingMode::ZeroPageIndexedWithY => {
-                    let addr = low_byte.unwrap() + registers.y;
+                    let addr = low_byte + registers.y;
                     Some(*memory.get(addr as usize).unwrap() as u16)
                 }
                 AddressingMode::ZeroPageIndexedIndirect => {
-                    let addr = low_byte.unwrap() + registers.x;
+                    let addr = low_byte + registers.x;
                     let low = *memory.get(addr as usize).unwrap();
                     let high = *memory.get((addr + 1) as usize).unwrap();
-                    Some(address_from_bytes(low, high))
+                    let addr = address_from_bytes(low, high);
+                    Some(addr as u16)
                 }
                 AddressingMode::ZeroPageIndirectIndexedWithY => {
-                    let addr = address_from_bytes(low_byte.unwrap(), high_byte.unwrap());
+                    let addr = address_from_bytes(low_byte, high_byte);
                     let low_byte = *memory.get(addr as usize).unwrap();
                     let high_byte = *memory.get((addr + 1) as usize).unwrap();
                     let addr = address_from_bytes(low_byte, high_byte) + registers.y as u16;
-                    Some(memory[addr as usize] as u16)
+                    Some(*memory.get(addr as usize).unwrap() as u16)
                 }
             };
 
@@ -1104,63 +1192,32 @@ mod rp2a03 {
             let mut registers = Registers::new();
 
             // Accumulator
-            let res =
-                apply_addressing(&memory, &registers, AddressingMode::Accumulator, None, None);
+            let res = apply_addressing(&memory, &registers, AddressingMode::Accumulator, 0x0, 0x0);
             assert_eq!(res, None);
 
             // IMPLIED
-            let res = apply_addressing(&memory, &registers, AddressingMode::Implied, None, None);
+            let res = apply_addressing(&memory, &registers, AddressingMode::Implied, 0x0, 0x0);
             assert_eq!(res, None);
 
             // IMMEDIATE
-            let res = apply_addressing(
-                &memory,
-                &registers,
-                AddressingMode::Immediate,
-                Some(0x1),
-                None,
-            );
-            assert_eq!(res, Some(0x1));
+            let res = apply_addressing(&memory, &registers, AddressingMode::Immediate, 0x22, 0x0);
+            assert_eq!(res, Some(0x22));
 
-            let res = apply_addressing(
-                &memory,
-                &registers,
-                AddressingMode::Immediate,
-                Some(0x81),
-                None,
-            );
+            let res = apply_addressing(&memory, &registers, AddressingMode::Immediate, 0x81, 0x42);
             assert_eq!(res, Some(0x81));
 
             // ABSOLUTE
             memory.memory[0x201] = 42;
-            let res = apply_addressing(
-                &memory,
-                &registers,
-                AddressingMode::Absolute,
-                Some(0x1),
-                Some(0x2),
-            );
-            assert_eq!(res, Some(0x0201));
+            let res = apply_addressing(&memory, &registers, AddressingMode::Absolute, 0x10, 0xD0);
+            assert_eq!(res, Some(0xD010));
 
             // ZERO PAGE
             memory.memory[0x0] = 43;
-            let res = apply_addressing(
-                &memory,
-                &registers,
-                AddressingMode::ZeroPage,
-                Some(0x0),
-                None,
-            );
+            let res = apply_addressing(&memory, &registers, AddressingMode::ZeroPage, 0x0, 0x0);
             assert_eq!(res, Some(43));
 
             // Relative
-            let res = apply_addressing(
-                &memory,
-                &registers,
-                AddressingMode::Relative,
-                Some(0x42),
-                None,
-            );
+            let res = apply_addressing(&memory, &registers, AddressingMode::Relative, 0x42, 0x0);
             assert_eq!(res, Some(0x42));
 
             // AbsoluteIndirect
@@ -1170,8 +1227,8 @@ mod rp2a03 {
                 &memory,
                 &registers,
                 AddressingMode::AbsoluteIndirect,
-                Some(0x01),
-                Some(0xA0),
+                0x01,
+                0xA0,
             );
             assert_eq!(res, Some(0x00FF));
 
@@ -1182,8 +1239,8 @@ mod rp2a03 {
                 &memory,
                 &registers,
                 AddressingMode::AbsoluteIndirectWithX,
-                Some(0x1),
-                Some(0xC0),
+                0x1,
+                0xC0,
             );
             assert_eq!(res, Some(0x5A));
 
@@ -1194,8 +1251,8 @@ mod rp2a03 {
                 &memory,
                 &registers,
                 AddressingMode::AbsoluteIndirectWithY,
-                Some(0x1),
-                Some(0xF0),
+                0x1,
+                0xF0,
             );
             assert_eq!(res, Some(0xEF));
 
@@ -1206,8 +1263,8 @@ mod rp2a03 {
                 &memory,
                 &registers,
                 AddressingMode::ZeroPageIndexedWithX,
-                Some(0x1),
-                None,
+                0x1,
+                0x0,
             );
             assert_eq!(res, Some(0xA5));
 
@@ -1218,8 +1275,8 @@ mod rp2a03 {
                 &memory,
                 &registers,
                 AddressingMode::ZeroPageIndexedWithY,
-                Some(0x1),
-                None,
+                0x1,
+                0x0,
             );
             assert_eq!(res, Some(0xE3));
 
@@ -1231,8 +1288,8 @@ mod rp2a03 {
                 &memory,
                 &registers,
                 AddressingMode::ZeroPageIndexedIndirect,
-                Some(0x15),
-                None,
+                0x15,
+                0x0,
             );
             assert_eq!(res, Some(0xD010));
 
@@ -1245,8 +1302,8 @@ mod rp2a03 {
                 &memory,
                 &registers,
                 AddressingMode::ZeroPageIndirectIndexedWithY,
-                Some(0x2A),
-                Some(0x00),
+                0x2A,
+                0x0,
             );
             assert_eq!(res, Some(0x2F));
         }
@@ -1442,48 +1499,18 @@ fn main() {
 
     // Set up registers
     let mut registers = Registers::new();
-
-    /*
-        print!(
-        "{:4X} {:2X} ",
-        registers.pc, memory.memory[registers.pc as usize]
-    );
-    if num_operands > 0 {
-        print!("{:2X} ", ops.0);
-    } else {
-        print!("   ");
-    }
-    if num_operands >= 2 {
-        print!("{:2X} ", ops.1);
-    } else {
-        print!("   ");
-    }
-    print!("{:4?} ", instruction);
-
-    match num_operands {
-        1 => print!("{:4X} ", ops.0),
-        2 => print!(
-            "{:4X} ",
-            apply_addressing(
-                &memory,
-                &registers,
-                addressing_mode.clone(),
-                Some(ops.0),
-                Some(ops.1),
-            )
-            .unwrap_or(0)
-        ),
-        _ => print!("     "),
-    }
-
-    print!(
-        "A:{:2X} X:{:2X} Y:{:2X} P:{:2X} SP:{:4X} PPU: SOMETHING, SOMETHING SOMETHING",
-        registers.a, registers.x, registers.y, registers.status, memory.stack_pointer
-    );
-
-    println!();
-    */
     registers.pc = 0xC000; // Becasue nestest starts here
+                           // registers.pc = reset_vector;
+
+    // POWER ON NES
+    registers.status = 0x24;
+
+    memory.stack_pointer = 0xFD; // Stack is on page 1 only so 0xFF is actually 0x01FF
+
+    memory.memory[0x4017] = 0x00; // Frame IRQ enabled
+    memory.memory[0x4015] = 0x00; // All channels disabled
+    memory.memory[0x4000..0x400F].copy_from_slice(&[0x0; 15]);
+    memory.memory[0x4010..0x4013].copy_from_slice(&[0x0; 3]);
 
     loop {
         let byte = memory.memory[registers.pc as usize];
@@ -1494,45 +1521,61 @@ fn main() {
 
         let (low_byte, high_byte) = ops;
         let bytes = address_from_bytes(low_byte, high_byte);
-        let addr = apply_addressing(
-            &memory,
-            &registers,
-            addressing_mode,
-            Some(low_byte),
-            Some(high_byte),
-        )
-        .unwrap_or(0);
+        let addr = apply_addressing(&memory, &registers, addressing_mode, low_byte, high_byte)
+            .unwrap_or(0);
 
+        // P : Processor status
+        // A : Accumulator
+        // X : register X
+        //
         print!(
-            "{:4X} {:2X} ",
+            "{:04X}  {:02X} ",
             registers.pc, memory.memory[registers.pc as usize]
         );
         if num_operands > 0 {
-            print!("{:2X} ", ops.0);
+            print!("{:02X} ", ops.0);
         } else {
             print!("   ");
         }
         if num_operands >= 2 {
-            print!("{:2X} ", ops.1);
+            print!("{:02X} ", ops.1);
         } else {
             print!("   ");
         }
         print!("{:4?} ", instruction);
 
         match num_operands {
-            1 => print!("{:4X} ", ops.0),
-            2 => print!("{:4X} ", addr),
+            1 => match instruction {
+                Instructions::BCC
+                | Instructions::BCS
+                | Instructions::BNE
+                | Instructions::BPL
+                | Instructions::BEQ => {
+                    print!("{:04X} ", registers.pc + addr + 2)
+                }
+                _ => print!("{:04X} ", addr),
+            },
+            2 => match instruction {
+                Instructions::BCC
+                | Instructions::BCS
+                | Instructions::BNE
+                | Instructions::BPL
+                | Instructions::BEQ => {
+                    print!("{:04X} ", registers.pc + addr)
+                }
+                _ => print!("{:04X} ", addr),
+            },
             _ => print!("     "),
         }
 
         print!(
-            "A:{:2X} X:{:2X} Y:{:2X} P:{:2X} SP:{:4X} PPU: SOMETHING, SOMETHING SOMETHING",
+            "A:{:2X} X:{:2X} Y:{:2X} P:{:2X} SP:{:2X} PPU: SOMETHING, SOMETHING SOMETHING",
             registers.a, registers.x, registers.y, registers.status, memory.stack_pointer
         );
 
         println!();
 
-        registers.pc += 1;
+        registers.pc += 1; // READ instruction
 
         match instruction {
             Instructions::SEI => {
