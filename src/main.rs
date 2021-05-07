@@ -178,6 +178,7 @@ mod rp2a03 {
             ORA,
             CLV,
             EOR,
+            ADC,
         }
 
         #[must_use]
@@ -353,6 +354,18 @@ mod rp2a03 {
                 0x55 => (Instructions::EOR, AddressingMode::ZeroPageIndexedWithX),
                 0x51 => (
                     Instructions::EOR,
+                    AddressingMode::ZeroPageIndirectIndexedWithY,
+                ),
+                // ADC
+                0x6D => (Instructions::ADC, AddressingMode::Absolute),
+                0x7D => (Instructions::ADC, AddressingMode::AbsoluteIndirectWithX),
+                0x79 => (Instructions::ADC, AddressingMode::AbsoluteIndirectWithY),
+                0x69 => (Instructions::ADC, AddressingMode::Immediate),
+                0x65 => (Instructions::ADC, AddressingMode::ZeroPage),
+                0x61 => (Instructions::ADC, AddressingMode::ZeroPageIndexedIndirect),
+                0x75 => (Instructions::ADC, AddressingMode::ZeroPageIndexedWithX),
+                0x71 => (
+                    Instructions::ADC,
                     AddressingMode::ZeroPageIndirectIndexedWithY,
                 ),
                 _ => panic!("Unknown opcode {:#x}", opcode),
@@ -1397,6 +1410,51 @@ mod rp2a03 {
             assert_eq!(registers.a, 0b1);
         }
 
+        pub fn adc(registers: &mut Registers, memory: &mut Memory, addr: u16) {
+            // ~CARRY
+            let carry = if registers.is_flag_set(StatusFlag::C) {
+                1
+            } else {
+                0
+            } as u8;
+
+            let a = if registers.a >= 0x80 {
+                (registers.a as i32 - (1 << 8)) as i16
+            } else {
+                registers.a as i16
+            };
+
+            let m = memory.memory[addr as usize];
+            let m = if m >= 0x80 {
+                (m as i32 - (1 << 8)) as i16
+            } else {
+                m as i16
+            };
+
+            let temp = a as i32 + m as i32 + carry as i32;
+
+            let carry = (1 << 9) & temp == (1 << 9);
+
+            registers.a = temp as u8;
+
+            registers.set_flag(StatusFlag::C, !carry);
+            registers.set_flag(StatusFlag::V, carry);
+            registers.set_flag(StatusFlag::Z, registers.a == 0);
+            registers.set_flag(StatusFlag::N, registers.a >= 0x80);
+        }
+
+        #[test]
+        fn adc_test() {
+            let mut registers = Registers::new();
+            let mut memory = Memory::new();
+
+            registers.a = 0x2;
+
+            memory.memory[0x2] = 0x40;
+            adc(&mut registers, &mut memory, 0x2);
+            assert_eq!(registers.a, 0x42);
+        }
+
         /**
         Applies addressing mode rules to operands and gives out 16-bit results
          */
@@ -2050,6 +2108,10 @@ fn main() {
             }
             Instructions::EOR => {
                 eor(&mut registers, &mut memory, addr);
+                registers.pc += num_operands;
+            }
+            Instructions::ADC => {
+                adc(&mut registers, &mut memory, addr);
                 registers.pc += num_operands;
             }
         }
