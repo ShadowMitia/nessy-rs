@@ -184,6 +184,7 @@ mod rp2a03 {
             INX,
             TAX,
             TYA,
+            TXA,
         }
 
         #[must_use]
@@ -385,6 +386,8 @@ mod rp2a03 {
                 0xAA => (Instructions::TAX, AddressingMode::Implied),
                 // TYA
                 0x98 => (Instructions::TYA, AddressingMode::Implied),
+                // TXA
+                0x8A => (Instructions::TXA, AddressingMode::Implied),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -1606,7 +1609,34 @@ mod rp2a03 {
 
             registers.y = 42;
             registers.pc += 1; // Simulate reading insruction
-            tay(&mut registers);
+            tya(&mut registers);
+            assert_eq!(registers.a, 42);
+        }
+
+        pub fn txa(registers: &mut Registers) {
+            registers.a = registers.x;
+
+            let operand = registers.a;
+
+            registers.status = if operand == 0 {
+                registers.status | 0b00000010
+            } else {
+                registers.status & 0b11111101
+            };
+            registers.status = if operand >= 0x80 {
+                registers.status | 0b10000000
+            } else {
+                registers.status & 0b01111111
+            };
+        }
+
+        #[test]
+        fn txa_test() {
+            let mut registers = Registers::new();
+
+            registers.x = 42;
+            registers.pc += 1; // Simulate reading insruction
+            txa(&mut registers);
             assert_eq!(registers.a, 42);
         }
 
@@ -2287,6 +2317,10 @@ fn main() {
             }
             Instructions::TYA => {
                 tya(&mut registers);
+                registers.pc += num_operands;
+            }
+            Instructions::TXA => {
+                txa(&mut registers);
                 registers.pc += num_operands;
             }
         }
