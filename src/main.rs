@@ -382,6 +382,8 @@ mod rp2a03 {
                 0xE8 => (Instructions::INX, AddressingMode::Implied),
                 // TAX
                 0xAA => (Instructions::TAX, AddressingMode::Implied),
+                // TAY
+                0x98 => (Instructions::TAY, AddressingMode::Implied),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -1578,6 +1580,33 @@ mod rp2a03 {
             registers.pc += 1; // Simulate reading insruction
             tax(&mut registers);
             assert_eq!(registers.x, 42);
+        }
+
+        pub fn tya(registers: &mut Registers) {
+            registers.a = registers.y;
+
+            let operand = registers.a;
+
+            registers.status = if operand == 0 {
+                registers.status | 0b00000010
+            } else {
+                registers.status & 0b11111101
+            };
+            registers.status = if operand >= 0x80 {
+                registers.status | 0b10000000
+            } else {
+                registers.status & 0b01111111
+            };
+        }
+
+        #[test]
+        fn tya_test() {
+            let mut registers = Registers::new();
+
+            registers.y = 42;
+            registers.pc += 1; // Simulate reading insruction
+            tay(&mut registers);
+            assert_eq!(registers.a, 42);
         }
 
         /**
