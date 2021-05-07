@@ -175,6 +175,7 @@ mod rp2a03 {
             PHA,
             PLP,
             BMI,
+            ORA,
         }
 
         #[must_use]
@@ -326,6 +327,18 @@ mod rp2a03 {
                 0x28 => (Instructions::PLP, AddressingMode::Implied),
                 // BMI
                 0x30 => (Instructions::BMI, AddressingMode::Relative),
+                // ORA
+                0x0D => (Instructions::ORA, AddressingMode::Absolute),
+                0x1D => (Instructions::ORA, AddressingMode::AbsoluteIndirectWithX),
+                0x19 => (Instructions::ORA, AddressingMode::AbsoluteIndirectWithY),
+                0x09 => (Instructions::ORA, AddressingMode::Immediate),
+                0x05 => (Instructions::ORA, AddressingMode::ZeroPage),
+                0x01 => (Instructions::ORA, AddressingMode::ZeroPageIndexedIndirect),
+                0x15 => (Instructions::ORA, AddressingMode::ZeroPageIndexedWithX),
+                0x11 => (
+                    Instructions::ORA,
+                    AddressingMode::ZeroPageIndirectIndexedWithY,
+                ),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -1301,6 +1314,28 @@ mod rp2a03 {
             assert_eq!(registers.pc, 0x43);
         }
 
+        pub fn ora(registers: &mut Registers, value: u8) {
+            registers.a |= value;
+        }
+
+        #[test]
+        fn ora_test() {
+            let mut registers = Registers::new();
+            let mut memory = Memory::new();
+
+            registers.a = 0b00000001;
+            memory.memory[0x1] = 0b00000001;
+            registers.pc += 1; // Simulate reading insruction
+            ora(&mut registers, 0x1);
+            assert_eq!(registers.a, 1);
+
+            registers.a = 0b00000010;
+            memory.memory[0x1] = 0b00000001;
+            registers.pc += 1; // Simulate reading insruction
+            ora(&mut registers, 0x1);
+            assert_eq!(registers.a, 0b11);
+        }
+
         /**
         Applies addressing mode rules to operands and gives out 16-bit results
          */
@@ -1941,6 +1976,10 @@ fn main() {
                 if !bmi(&mut registers, addr) {
                     registers.pc += num_operands;
                 }
+            }
+            Instructions::ORA => {
+                ora(&mut registers, addr as u8);
+                registers.pc += num_operands;
             }
         }
     }
