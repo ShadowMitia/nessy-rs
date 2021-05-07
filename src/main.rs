@@ -174,6 +174,7 @@ mod rp2a03 {
             CMP,
             PHA,
             PLP,
+            BMI,
         }
 
         #[must_use]
@@ -323,6 +324,8 @@ mod rp2a03 {
                 0x48 => (Instructions::PHA, AddressingMode::Implied),
                 // PLP
                 0x28 => (Instructions::PLP, AddressingMode::Implied),
+                // BMI
+                0x30 => (Instructions::BMI, AddressingMode::Relative),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -1271,6 +1274,33 @@ mod rp2a03 {
             assert_eq!(registers.status, 0b10101010);
         }
 
+        #[must_use]
+        pub fn bmi(registers: &mut Registers, addr: u16) -> bool {
+            if registers.is_flag_set(StatusFlag::N) {
+                if addr >= 0x80 {
+                    let value = (addr as i32 - (1 << 8)) as i16;
+                    registers.pc = 1 + (registers.pc as i16 + value) as u16;
+                } else {
+                    registers.pc = 1 + (registers.pc as i16 + addr as i16) as u16;
+                }
+                true
+            } else {
+                false
+            }
+        }
+
+        #[test]
+        fn bmi_test() {
+            let mut registers = Registers::new();
+
+            let _ = bmi(&mut registers, 0x42);
+            assert_eq!(registers.pc, 0x0);
+
+            registers.set_flag(StatusFlag::N, true);
+            let _ = bmi(&mut registers, 0x42);
+            assert_eq!(registers.pc, 0x43);
+        }
+
         /**
         Applies addressing mode rules to operands and gives out 16-bit results
          */
@@ -1906,6 +1936,11 @@ fn main() {
             Instructions::PLP => {
                 plp(&mut registers, &mut memory);
                 registers.pc += num_operands;
+            }
+            Instructions::BMI => {
+                if !bmi(&mut registers, addr) {
+                    registers.pc += num_operands;
+                }
             }
         }
     }
