@@ -176,6 +176,7 @@ mod rp2a03 {
             PLP,
             BMI,
             ORA,
+            CLV
         }
 
         #[must_use]
@@ -339,6 +340,8 @@ mod rp2a03 {
                     Instructions::ORA,
                     AddressingMode::ZeroPageIndirectIndexedWithY,
                 ),
+                // CLV
+                0xB8 => (Instructions::CLV, AddressingMode::Implied),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -1336,6 +1339,19 @@ mod rp2a03 {
             assert_eq!(registers.a, 0b11);
         }
 
+        pub fn clv(registers: &mut Registers) {
+            registers.set_flag(StatusFlag::V, false);
+        }
+
+        #[test]
+        fn clv_test() {
+            let mut registers = Registers::new();
+            registers.set_flag(StatusFlag::V, true);
+            registers.pc += 1; // Simulate reading insruction
+            clv(&mut registers);
+            assert_eq!(registers.is_flag_set(StatusFlag::V), false);
+        }
+
         /**
         Applies addressing mode rules to operands and gives out 16-bit results
          */
@@ -1979,6 +1995,10 @@ fn main() {
             }
             Instructions::ORA => {
                 ora(&mut registers, addr as u8);
+                registers.pc += num_operands;
+            }
+            Instructions::CLV => {
+                clv(&mut registers);
                 registers.pc += num_operands;
             }
         }
