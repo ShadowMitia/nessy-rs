@@ -170,6 +170,7 @@ mod rp2a03 {
             ASL,
             RTI,
             SBC,
+            SED
         }
 
         #[must_use]
@@ -301,6 +302,7 @@ mod rp2a03 {
                     Instructions::SBC,
                     AddressingMode::ZeroPageIndirectIndexedWithY,
                 ),
+                0xF8 => (Instructions::SED, AddressingMode::Implied),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -1154,11 +1156,23 @@ mod rp2a03 {
 
             registers.status = 0x65;
             registers.a = 0x40;
-            registers.pc += 1;
+            registers.pc += 1; // Simulate instruction READ
             memory.memory[0x2] = 0x40;
             sbc(&mut registers, &mut memory, 0x2);
             assert_eq!(registers.a, 0x0);
             assert_eq!(registers.status, 0x27);
+        }
+
+        pub fn sed(registers: &mut Registers) {
+            registers.set_flag(StatusFlag::D, true);
+        }
+
+        #[test]
+        fn sed_test() {
+            let mut registers = Registers::new();
+            registers.pc += 1; // Simulate instruction READ
+            sed(&mut registers);
+            assert_eq!(registers.status, 0x8)
         }
 
         /**
@@ -1779,6 +1793,10 @@ fn main() {
             }
             Instructions::SBC => {
                 sbc(&mut registers, &mut memory, addr);
+                registers.pc += num_operands;
+            }
+            Instructions::SED => {
+                sed(&mut registers);
                 registers.pc += num_operands;
             }
         }
