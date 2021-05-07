@@ -176,7 +176,8 @@ mod rp2a03 {
             PLP,
             BMI,
             ORA,
-            CLV
+            CLV,
+            EOR,
         }
 
         #[must_use]
@@ -342,6 +343,18 @@ mod rp2a03 {
                 ),
                 // CLV
                 0xB8 => (Instructions::CLV, AddressingMode::Implied),
+                // EOR
+                0x4D => (Instructions::EOR, AddressingMode::Absolute),
+                0x5D => (Instructions::EOR, AddressingMode::AbsoluteIndirectWithX),
+                0x59 => (Instructions::EOR, AddressingMode::AbsoluteIndirectWithY),
+                0x49 => (Instructions::EOR, AddressingMode::Immediate),
+                0x45 => (Instructions::EOR, AddressingMode::ZeroPage),
+                0x41 => (Instructions::EOR, AddressingMode::ZeroPageIndexedIndirect),
+                0x55 => (Instructions::EOR, AddressingMode::ZeroPageIndexedWithX),
+                0x51 => (
+                    Instructions::EOR,
+                    AddressingMode::ZeroPageIndirectIndexedWithY,
+                ),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -517,6 +530,9 @@ mod rp2a03 {
 
         pub fn and(registers: &mut Registers, value: u8) {
             registers.a &= value;
+
+            registers.set_flag(StatusFlag::Z, registers.a == 0);
+            registers.set_flag(StatusFlag::N, registers.a >= 0x80);
         }
 
         #[test]
@@ -1319,6 +1335,9 @@ mod rp2a03 {
 
         pub fn ora(registers: &mut Registers, value: u8) {
             registers.a |= value;
+
+            registers.set_flag(StatusFlag::Z, registers.a == 0);
+            registers.set_flag(StatusFlag::N, registers.a >= 0x80);
         }
 
         #[test]
@@ -1350,6 +1369,32 @@ mod rp2a03 {
             registers.pc += 1; // Simulate reading insruction
             clv(&mut registers);
             assert_eq!(registers.is_flag_set(StatusFlag::V), false);
+        }
+
+        pub fn eor(registers: &mut Registers, memory: &mut Memory, addr: u16) {
+            let m = memory.memory[addr as usize];
+            registers.a ^= m;
+
+            registers.set_flag(StatusFlag::Z, registers.a == 0);
+            registers.set_flag(StatusFlag::N, registers.a >= 0x80);
+        }
+
+        #[test]
+        fn eor_test() {
+            let mut registers = Registers::new();
+            let mut memory = Memory::new();
+            registers.pc += 1; // Simulate reading insruction
+
+            registers.a = 0b1;
+            memory.memory[0x1] = 0b1;
+
+            eor(&mut registers, &mut memory, 0x1);
+            assert_eq!(registers.a, 0b0);
+
+            registers.a = 2;
+            memory.memory[0x1] = 3;
+            eor(&mut registers, &mut memory, 0x1);
+            assert_eq!(registers.a, 0b1);
         }
 
         /**
@@ -1562,6 +1607,8 @@ mod rp2a03 {
         }
     }
 }
+
+use core::num;
 
 use rp2a03::{instructions::*, Registers, *};
 
@@ -1999,6 +2046,10 @@ fn main() {
             }
             Instructions::CLV => {
                 clv(&mut registers);
+                registers.pc += num_operands;
+            }
+            Instructions::EOR => {
+                eor(&mut registers, &mut memory, addr);
                 registers.pc += num_operands;
             }
         }
