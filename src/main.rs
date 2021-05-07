@@ -128,6 +128,8 @@ mod rp2a03 {
 
     pub mod instructions {
 
+        use std::{mem, ops::Add};
+
         use crate::{address_from_bytes, BREAK_VECTOR_ADDDRESS, STACK_ADDRESS};
 
         use super::*;
@@ -167,6 +169,7 @@ mod rp2a03 {
             LDY,
             ASL,
             RTI,
+            SBC,
         }
 
         #[must_use]
@@ -286,6 +289,18 @@ mod rp2a03 {
                 0x16 => (Instructions::ASL, AddressingMode::ZeroPageIndexedWithX),
                 // RTI
                 0x40 => (Instructions::RTI, AddressingMode::Implied),
+                // SBC
+                0xED => (Instructions::SBC, AddressingMode::Absolute),
+                0xFD => (Instructions::SBC, AddressingMode::AbsoluteIndirectWithX),
+                0xF9 => (Instructions::SBC, AddressingMode::AbsoluteIndirectWithY),
+                0xE9 => (Instructions::SBC, AddressingMode::Immediate),
+                0xE5 => (Instructions::SBC, AddressingMode::ZeroPage),
+                0xE1 => (Instructions::SBC, AddressingMode::ZeroPageIndexedIndirect),
+                0xF5 => (Instructions::SBC, AddressingMode::ZeroPageIndexedWithX),
+                0xF1 => (
+                    Instructions::SBC,
+                    AddressingMode::ZeroPageIndirectIndexedWithY,
+                ),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -1099,6 +1114,53 @@ mod rp2a03 {
             assert_eq!(registers.pc, 0x2);
         }
 
+        pub fn sbc(registers: &mut Registers, memory: &mut Memory, addr: u16) {
+            // ~CARRY
+            let carry = 1 - if registers.is_flag_set(StatusFlag::C) {
+                1
+            } else {
+                0
+            } as u8;
+
+            let a = if registers.a >= 0x80 {
+                (registers.a as i32 - (1 << 8)) as i16
+            } else {
+                registers.a as i16
+            };
+
+            let m = memory.memory[addr as usize];
+            let m = if m >= 0x80 {
+                (m as i32 - (1 << 8)) as i16
+            } else {
+                m as i16
+            };
+
+            let temp = a as i32 - m as i32 - carry as i32;
+
+            let carry = (1 << 9) & temp == (1 << 9);
+
+            registers.a = temp as u8;
+
+            registers.set_flag(StatusFlag::C, !carry);
+            registers.set_flag(StatusFlag::V, carry);
+            registers.set_flag(StatusFlag::Z, registers.a == 0);
+            registers.set_flag(StatusFlag::N, registers.a >= 0x80);
+        }
+
+        #[test]
+        fn sbc_test() {
+            let mut registers = Registers::new();
+            let mut memory = Memory::new();
+
+            registers.status = 0x65;
+            registers.a = 0x40;
+            registers.pc += 1;
+            memory.memory[0x2] = 0x40;
+            sbc(&mut registers, &mut memory, 0x2);
+            assert_eq!(registers.a, 0x0);
+            assert_eq!(registers.status, 0x27);
+        }
+
         /**
         Applies addressing mode rules to operands and gives out 16-bit results
          */
@@ -1713,6 +1775,10 @@ fn main() {
             }
             Instructions::RTI => {
                 rti(&mut registers, &mut memory);
+                registers.pc += num_operands;
+            }
+            Instructions::SBC => {
+                sbc(&mut registers, &mut memory, addr);
                 registers.pc += num_operands;
             }
         }
