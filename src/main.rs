@@ -172,7 +172,8 @@ mod rp2a03 {
             SBC,
             SED,
             CMP,
-            PHA
+            PHA,
+            PLP,
         }
 
         #[must_use]
@@ -320,6 +321,8 @@ mod rp2a03 {
                 ),
                 // PHA
                 0x48 => (Instructions::PHA, AddressingMode::Implied),
+                // PLP
+                0x28 => (Instructions::PLP, AddressingMode::Implied),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -1254,6 +1257,20 @@ mod rp2a03 {
             assert_eq!(memory.stack_pop(), 0x42);
         }
 
+        pub fn plp(registers: &mut Registers, memory: &mut Memory) {
+            registers.status = memory.stack_pop();
+        }
+
+        #[test]
+        fn plp_test() {
+            let mut registers = Registers::new();
+            let mut memory = Memory::new();
+
+            memory.stack_push(0b10101010);
+            plp(&mut registers, &mut memory);
+            assert_eq!(registers.status, 0b10101010);
+        }
+
         /**
         Applies addressing mode rules to operands and gives out 16-bit results
          */
@@ -1884,6 +1901,10 @@ fn main() {
             }
             Instructions::PHA => {
                 pha(&mut registers, &mut memory);
+                registers.pc += num_operands;
+            }
+            Instructions::PLP => {
+                plp(&mut registers, &mut memory);
                 registers.pc += num_operands;
             }
         }
