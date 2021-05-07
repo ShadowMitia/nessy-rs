@@ -170,7 +170,8 @@ mod rp2a03 {
             ASL,
             RTI,
             SBC,
-            SED
+            SED,
+            CMP,
         }
 
         #[must_use]
@@ -241,8 +242,8 @@ mod rp2a03 {
                 0xA8 => (Instructions::TAY, AddressingMode::Implied),
                 // CPY
                 0xCC => (Instructions::CPY, AddressingMode::Absolute),
-                0xC0 => (Instructions::CPX, AddressingMode::Immediate),
-                0xC4 => (Instructions::CPX, AddressingMode::ZeroPage),
+                0xC0 => (Instructions::CPY, AddressingMode::Immediate),
+                0xC4 => (Instructions::CPY, AddressingMode::ZeroPage),
                 // BNE
                 0xD0 => (Instructions::BNE, AddressingMode::Relative),
                 // RTS
@@ -302,7 +303,20 @@ mod rp2a03 {
                     Instructions::SBC,
                     AddressingMode::ZeroPageIndirectIndexedWithY,
                 ),
+                // SED
                 0xF8 => (Instructions::SED, AddressingMode::Implied),
+                // CMP
+                0xCD => (Instructions::CMP, AddressingMode::Absolute),
+                0xDD => (Instructions::CMP, AddressingMode::AbsoluteIndirectWithX),
+                0xD9 => (Instructions::CMP, AddressingMode::AbsoluteIndirectWithY),
+                0xC9 => (Instructions::CMP, AddressingMode::Immediate),
+                0xC5 => (Instructions::CMP, AddressingMode::ZeroPage),
+                0xC1 => (Instructions::CMP, AddressingMode::ZeroPageIndexedIndirect),
+                0xD5 => (Instructions::CMP, AddressingMode::ZeroPageIndexedWithX),
+                0xD1 => (
+                    Instructions::CMP,
+                    AddressingMode::ZeroPageIndirectIndexedWithY,
+                ),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -1175,6 +1189,54 @@ mod rp2a03 {
             assert_eq!(registers.status, 0x8)
         }
 
+        pub fn cmp(registers: &mut Registers, memory: &mut Memory, value: u16) {
+            registers.status &= 0b01111100;
+
+            match registers.a.cmp(&memory.memory[value as usize]) {
+                std::cmp::Ordering::Less => {
+                    // registers.status &= 0b00000000;
+                }
+                std::cmp::Ordering::Equal => {
+                    registers.status |= 0b00000011;
+                }
+                std::cmp::Ordering::Greater => registers.status |= 0b00000001,
+            }
+
+            if (registers.a as i32 - memory.memory[value as usize] as i32) < 0 {
+                registers.status |= 0b10000000;
+            }
+        }
+
+        #[test]
+        fn cmp_test() {
+            let mut registers = Registers::new();
+            let mut memory = Memory::new();
+
+            registers.a = 0x10;
+            memory.memory[0x42] = 0x10;
+            registers.pc += 1; // Simulate reading insruction
+            cmp(&mut registers, &mut memory, 0x42);
+            assert_eq!(registers.status, 0b00000011);
+
+            registers.a = 0x9;
+            memory.memory[0x42] = 0x10;
+            registers.pc += 1; // Simulate reading insruction
+            cmp(&mut registers, &mut memory, 0x42);
+            assert_eq!(registers.status, 0b10000000);
+
+            registers.a = 0x10;
+            memory.memory[0x42] = 0x9;
+            registers.pc += 1; // Simulate reading insruction
+            cmp(&mut registers, &mut memory, 0x42);
+            assert_eq!(registers.status, 0b00000001);
+
+            registers.a = 0xFF;
+            memory.memory[0x42] = 0x10;
+            registers.pc += 1; // Simulate reading insruction
+            cmp(&mut registers, &mut memory, 0x42);
+            assert_eq!(registers.status, 0b00000001);
+        }
+
         /**
         Applies addressing mode rules to operands and gives out 16-bit results
          */
@@ -1797,6 +1859,10 @@ fn main() {
             }
             Instructions::SED => {
                 sed(&mut registers);
+                registers.pc += num_operands;
+            }
+            Instructions::CMP => {
+                cmp(&mut registers, &mut memory, addr);
                 registers.pc += num_operands;
             }
         }
