@@ -172,6 +172,7 @@ mod rp2a03 {
             SBC,
             SED,
             CMP,
+            PHA
         }
 
         #[must_use]
@@ -317,6 +318,8 @@ mod rp2a03 {
                     Instructions::CMP,
                     AddressingMode::ZeroPageIndirectIndexedWithY,
                 ),
+                // PHA
+                0x48 => (Instructions::PHA, AddressingMode::Implied),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -1237,6 +1240,20 @@ mod rp2a03 {
             assert_eq!(registers.status, 0b00000001);
         }
 
+        pub fn pha(registers: &mut Registers, memory: &mut Memory) {
+            memory.stack_push(registers.a);
+        }
+
+        #[test]
+        fn pha_test() {
+            let mut registers = Registers::new();
+            let mut memory = Memory::new();
+
+            registers.a = 0x42;
+            pha(&mut registers, &mut memory);
+            assert_eq!(memory.stack_pop(), 0x42);
+        }
+
         /**
         Applies addressing mode rules to operands and gives out 16-bit results
          */
@@ -1863,6 +1880,10 @@ fn main() {
             }
             Instructions::CMP => {
                 cmp(&mut registers, &mut memory, addr);
+                registers.pc += num_operands;
+            }
+            Instructions::PHA => {
+                pha(&mut registers, &mut memory);
                 registers.pc += num_operands;
             }
         }
