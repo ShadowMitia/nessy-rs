@@ -181,6 +181,7 @@ mod rp2a03 {
             ADC,
             STY,
             INY,
+            INX,
         }
 
         #[must_use]
@@ -376,6 +377,8 @@ mod rp2a03 {
                 0x94 => (Instructions::STY, AddressingMode::ZeroPageIndexedIndirect),
                 // INY
                 0xC8 => (Instructions::INY, AddressingMode::Implied),
+                // INX
+                0xE8 => (Instructions::INX, AddressingMode::Implied),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -476,8 +479,13 @@ mod rp2a03 {
         }
 
         pub fn inc(registers: &mut Registers, memory: &mut Memory, addr: u16) {
-            memory.memory[addr as usize] += 1;
-
+            let operand = memory.memory[addr as usize] as u16;
+            if operand == 0xFF {
+                memory.memory[addr as usize] = 0;
+            } else {
+                memory.memory[addr as usize] += 1;
+            }
+            
             let operand = memory.memory[addr as usize];
 
             registers.status = if operand == 0 {
@@ -1479,7 +1487,12 @@ mod rp2a03 {
         }
 
         pub fn iny(registers: &mut Registers) {
-            registers.y += 1;
+            let operand = registers.y as u16;
+            if operand == 0xFF {
+                registers.y = 0;
+            } else {
+                registers.y += 1;
+            }
 
             let operand = registers.y;
 
@@ -1503,6 +1516,38 @@ mod rp2a03 {
             registers.pc += 1; // Simulate reading insruction
             iny(&mut registers);
             assert_eq!(registers.y, 42);
+        }
+
+        pub fn inx(registers: &mut Registers) {
+            let operand = registers.x as u16;
+            if operand == 0xFF {
+                registers.x = 0;
+            } else {
+                registers.x += 1;
+            }
+
+            let operand = registers.x;
+
+            registers.status = if operand == 0 {
+                registers.status | 0b00000010
+            } else {
+                registers.status & 0b11111101
+            };
+            registers.status = if operand >= 0x80 {
+                registers.status | 0b10000000
+            } else {
+                registers.status & 0b01111111
+            };
+        }
+
+        #[test]
+        fn inx_test() {
+            let mut registers = Registers::new();
+
+            registers.x = 41;
+            registers.pc += 1; // Simulate reading insruction
+            inx(&mut registers);
+            assert_eq!(registers.x, 42);
         }
 
         /**
@@ -2170,6 +2215,10 @@ fn main() {
             }
             Instructions::INY => {
                 iny(&mut registers);
+                registers.pc += num_operands;
+            }
+            Instructions::INX => {
+                inx(&mut registers);
                 registers.pc += num_operands;
             }
         }
