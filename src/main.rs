@@ -182,6 +182,7 @@ mod rp2a03 {
             STY,
             INY,
             INX,
+            TAX,
         }
 
         #[must_use]
@@ -379,6 +380,8 @@ mod rp2a03 {
                 0xC8 => (Instructions::INY, AddressingMode::Implied),
                 // INX
                 0xE8 => (Instructions::INX, AddressingMode::Implied),
+                // TAX
+                0xAA => (Instructions::TAX, AddressingMode::Implied),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -485,7 +488,7 @@ mod rp2a03 {
             } else {
                 memory.memory[addr as usize] += 1;
             }
-            
+
             let operand = memory.memory[addr as usize];
 
             registers.status = if operand == 0 {
@@ -1550,6 +1553,33 @@ mod rp2a03 {
             assert_eq!(registers.x, 42);
         }
 
+        pub fn tax(registers: &mut Registers) {
+            registers.x = registers.a;
+
+            let operand = registers.x;
+
+            registers.status = if operand == 0 {
+                registers.status | 0b00000010
+            } else {
+                registers.status & 0b11111101
+            };
+            registers.status = if operand >= 0x80 {
+                registers.status | 0b10000000
+            } else {
+                registers.status & 0b01111111
+            };
+        }
+
+        #[test]
+        fn tax_test() {
+            let mut registers = Registers::new();
+
+            registers.a = 42;
+            registers.pc += 1; // Simulate reading insruction
+            tax(&mut registers);
+            assert_eq!(registers.x, 42);
+        }
+
         /**
         Applies addressing mode rules to operands and gives out 16-bit results
          */
@@ -2219,6 +2249,10 @@ fn main() {
             }
             Instructions::INX => {
                 inx(&mut registers);
+                registers.pc += num_operands;
+            }
+            Instructions::TAX => {
+                tax(&mut registers);
                 registers.pc += num_operands;
             }
         }
