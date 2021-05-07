@@ -179,6 +179,7 @@ mod rp2a03 {
             CLV,
             EOR,
             ADC,
+            STY,
         }
 
         #[must_use]
@@ -368,6 +369,10 @@ mod rp2a03 {
                     Instructions::ADC,
                     AddressingMode::ZeroPageIndirectIndexedWithY,
                 ),
+                // STY
+                0x8C => (Instructions::STY, AddressingMode::Absolute),
+                0x84 => (Instructions::STY, AddressingMode::ZeroPage),
+                0x94 => (Instructions::STY, AddressingMode::ZeroPageIndexedIndirect),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -1455,6 +1460,21 @@ mod rp2a03 {
             assert_eq!(registers.a, 0x42);
         }
 
+        pub fn sty(registers: &mut Registers, memory: &mut Memory, addr: u16) {
+            memory.memory[addr as usize] = registers.y;
+        }
+
+        #[test]
+        fn sty_test() {
+            let mut registers = Registers::new();
+            let mut memory = Memory::new();
+
+            registers.y = 0x42;
+            registers.pc += 1; // Simulate reading insruction
+            sty(&mut registers, &mut memory, 0x30);
+            assert_eq!(memory.memory[0x30], 0x42);
+        }
+
         /**
         Applies addressing mode rules to operands and gives out 16-bit results
          */
@@ -2112,6 +2132,10 @@ fn main() {
             }
             Instructions::ADC => {
                 adc(&mut registers, &mut memory, addr);
+                registers.pc += num_operands;
+            }
+            Instructions::STY => {
+                sty(&mut registers, &mut memory, addr);
                 registers.pc += num_operands;
             }
         }
