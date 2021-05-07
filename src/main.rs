@@ -183,6 +183,7 @@ mod rp2a03 {
             INY,
             INX,
             TAX,
+            TYA,
         }
 
         #[must_use]
@@ -382,8 +383,8 @@ mod rp2a03 {
                 0xE8 => (Instructions::INX, AddressingMode::Implied),
                 // TAX
                 0xAA => (Instructions::TAX, AddressingMode::Implied),
-                // TAY
-                0x98 => (Instructions::TAY, AddressingMode::Implied),
+                // TYA
+                0x98 => (Instructions::TYA, AddressingMode::Implied),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -2282,6 +2283,10 @@ fn main() {
             }
             Instructions::TAX => {
                 tax(&mut registers);
+                registers.pc += num_operands;
+            }
+            Instructions::TYA => {
+                tya(&mut registers);
                 registers.pc += num_operands;
             }
         }
