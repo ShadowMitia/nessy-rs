@@ -180,6 +180,7 @@ mod rp2a03 {
             EOR,
             ADC,
             STY,
+            INY,
         }
 
         #[must_use]
@@ -373,6 +374,8 @@ mod rp2a03 {
                 0x8C => (Instructions::STY, AddressingMode::Absolute),
                 0x84 => (Instructions::STY, AddressingMode::ZeroPage),
                 0x94 => (Instructions::STY, AddressingMode::ZeroPageIndexedIndirect),
+                // INY
+                0xC8 => (Instructions::INY, AddressingMode::Implied),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -1475,6 +1478,33 @@ mod rp2a03 {
             assert_eq!(memory.memory[0x30], 0x42);
         }
 
+        pub fn iny(registers: &mut Registers) {
+            registers.y += 1;
+
+            let operand = registers.y;
+
+            registers.status = if operand == 0 {
+                registers.status | 0b00000010
+            } else {
+                registers.status & 0b11111101
+            };
+            registers.status = if operand >= 0x80 {
+                registers.status | 0b10000000
+            } else {
+                registers.status & 0b01111111
+            };
+        }
+
+        #[test]
+        fn iny_test() {
+            let mut registers = Registers::new();
+
+            registers.y = 41;
+            registers.pc += 1; // Simulate reading insruction
+            iny(&mut registers);
+            assert_eq!(registers.y, 42);
+        }
+
         /**
         Applies addressing mode rules to operands and gives out 16-bit results
          */
@@ -2136,6 +2166,10 @@ fn main() {
             }
             Instructions::STY => {
                 sty(&mut registers, &mut memory, addr);
+                registers.pc += num_operands;
+            }
+            Instructions::INY => {
+                iny(&mut registers);
                 registers.pc += num_operands;
             }
         }
