@@ -127,9 +127,6 @@ mod rp2a03 {
     }
 
     pub mod instructions {
-
-        use std::{mem, ops::Add};
-
         use crate::{address_from_bytes, BREAK_VECTOR_ADDDRESS, STACK_ADDRESS};
 
         use super::*;
@@ -185,6 +182,7 @@ mod rp2a03 {
             TAX,
             TYA,
             TXA,
+            TSX,
         }
 
         #[must_use]
@@ -388,6 +386,8 @@ mod rp2a03 {
                 0x98 => (Instructions::TYA, AddressingMode::Implied),
                 // TXA
                 0x8A => (Instructions::TXA, AddressingMode::Implied),
+                // TSX
+                0xBA => (Instructions::TSX, AddressingMode::Implied),
                 _ => panic!("Unknown opcode {:#x}", opcode),
             }
         }
@@ -1640,6 +1640,33 @@ mod rp2a03 {
             assert_eq!(registers.a, 42);
         }
 
+        pub fn tsx(registers: &mut Registers, memory: &mut Memory) {
+            registers.x = memory.stack_pointer as u8;
+
+            let operand = registers.x;
+
+            registers.status = if operand == 0 {
+                registers.status | 0b00000010
+            } else {
+                registers.status & 0b11111101
+            };
+            registers.status = if operand >= 0x80 {
+                registers.status | 0b10000000
+            } else {
+                registers.status & 0b01111111
+            };
+        }
+
+        #[test]
+        fn tsx_test() {
+            let mut registers = Registers::new();
+            let mut memory = Memory::new();
+
+            registers.pc += 1; // Simulate reading insruction
+            tsx(&mut registers, &mut memory);
+            assert_eq!(registers.x, memory.stack_pointer as u8);
+        }
+
         /**
         Applies addressing mode rules to operands and gives out 16-bit results
          */
@@ -1699,7 +1726,8 @@ mod rp2a03 {
                     let addr = address_from_bytes(low_byte, high_byte);
                     let low_byte = *memory.get(addr as usize).unwrap();
                     let high_byte = *memory.get((addr + 1) as usize).unwrap();
-                    let addr = address_from_bytes(low_byte, high_byte) + registers.y as u16;
+                    let addr =
+                        address_from_bytes(low_byte, high_byte) + registers.y as u16;
                     Some(*memory.get(addr as usize).unwrap() as u16)
                 }
             };
@@ -1851,7 +1879,6 @@ mod rp2a03 {
     }
 }
 
-use core::num;
 
 use rp2a03::{instructions::*, Registers, *};
 
@@ -2321,6 +2348,11 @@ fn main() {
             }
             Instructions::TXA => {
                 txa(&mut registers);
+                registers.pc += num_operands;
+            }
+            Instructions::TSX => {
+                panic!("TOTO");
+                tsx(&mut registers, &mut memory);
                 registers.pc += num_operands;
             }
         }
