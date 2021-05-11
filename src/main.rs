@@ -557,7 +557,7 @@ mod rp2a03 {
         }
 
         pub fn txs(registers: &mut Registers, memory: &mut Memory) {
-            memory.stack_push(registers.x);
+            memory.stack_pointer = registers.x as u16;
         }
 
         #[test]
@@ -569,7 +569,7 @@ mod rp2a03 {
             registers.pc += 1; // Simulate reading insruction
             txs(&mut registers, &mut memory);
 
-            assert_eq!(memory.memory[0x01FF], 42);
+            assert_eq!(memory.stack_pointer, 42);
         }
 
         pub fn and(registers: &mut Registers, value: u8) {
@@ -1716,18 +1716,8 @@ mod rp2a03 {
         pub fn tsx(registers: &mut Registers, memory: &mut Memory) {
             registers.x = memory.stack_pointer as u8;
 
-            let operand = registers.x;
-
-            registers.status = if operand == 0 {
-                registers.status | 0b00000010
-            } else {
-                registers.status & 0b11111101
-            };
-            registers.status = if operand >= 0x80 {
-                registers.status | 0b10000000
-            } else {
-                registers.status & 0b01111111
-            };
+            registers.set_flag(StatusFlag::Z, registers.x == 0);
+            registers.set_flag(StatusFlag::N, registers.x >= 0x80);
         }
 
         #[test]
@@ -2332,6 +2322,11 @@ fn main() {
             },
             _ => match addressing_mode {
                 AddressingMode::Immediate => write!(nestest_output, "#${:04X}    ", addr),
+                AddressingMode::Absolute => write!(
+                    nestest_output,
+                    "${:04X} = {:02}",
+                    addr, memory.memory[addr as usize]
+                ),
                 AddressingMode::ZeroPage => write!(
                     nestest_output,
                     "${:02X} = {:02}",
