@@ -995,16 +995,25 @@ CF21  24 01     BIT $01 = FF                    A:55 X:55 Y:69 P:27 SP:FB PPU:  
 CF23  38        SEC                             A:55 X:55 Y:69 P:E5 SP:FB PPU:  0, 00 CYC:0
 CF24  A9 80     LDA #$80                        A:55 X:55 Y:69 P:E5 SP:FB PPU:  0, 00 CYC:0
 CF26  0A        ASL A                           A:80 X:55 Y:69 P:E5 SP:FB PPU:  0, 00 CYC:0
-CF27  90 1E     BCC $CF47                       A:80 X:55 Y:69 P:67 SP:FB PPU:  0, 00 CYC:0
-CF29  D0 1C     BNE $CF47                       A:80 X:55 Y:69 P:67 SP:FB PPU:  0, 00 CYC:0
-CF2B  30 1A     BMI $CF47                       A:80 X:55 Y:69 P:67 SP:FB PPU:  0, 00 CYC:0
-CF2D  50 18     BVC $CF47                       A:80 X:55 Y:69 P:67 SP:FB PPU:  0, 00 CYC:0
-CF2F  C9 00     CMP #$00                        A:80 X:55 Y:69 P:67 SP:FB PPU:  0, 00 CYC:0
-CF31  D0 14     BNE $CF47                       A:80 X:55 Y:69 P:E5 SP:FB PPU:  0, 00 CYC:0
-CF47  A2 4B     LDX #$4B                        A:80 X:55 Y:69 P:E5 SP:FB PPU:  0, 00 CYC:0
-CF49  86 00     STX $00 = 00                    A:80 X:4B Y:69 P:65 SP:FB PPU:  0, 00 CYC:0
-CF4B  EA        NOP                             A:80 X:4B Y:69 P:65 SP:FB PPU:  0, 00 CYC:0
-CF4C  24 01     BIT $01 = FF                    A:80 X:4B Y:69 P:65 SP:FB PPU:  0, 00 CYC:0
-CF4E  38        SEC                             A:80 X:4B Y:69 P:E5 SP:FB PPU:  0, 00 CYC:0
-CF4F  A9 01     LDA #$01                        A:80 X:4B Y:69 P:E5 SP:FB PPU:  0, 00 CYC:0
-CF51  6A        Unknown                             A:01 X:4B Y:69 P:65 SP:FB PPU:  0, 00 CYC:0
+CF27  90 1E     BCC $CF47                       A:00 X:55 Y:69 P:67 SP:FB PPU:  0, 00 CYC:0
+CF29  D0 1C     BNE $CF47                       A:00 X:55 Y:69 P:67 SP:FB PPU:  0, 00 CYC:0
+CF2B  30 1A     BMI $CF47                       A:00 X:55 Y:69 P:67 SP:FB PPU:  0, 00 CYC:0
+CF2D  50 18     BVC $CF47                       A:00 X:55 Y:69 P:67 SP:FB PPU:  0, 00 CYC:0
+CF2F  C9 00     CMP #$00                        A:00 X:55 Y:69 P:67 SP:FB PPU:  0, 00 CYC:0
+CF31  D0 14     BNE $CF47                       A:00 X:55 Y:69 P:67 SP:FB PPU:  0, 00 CYC:0
+CF33  B8        CLV                             A:00 X:55 Y:69 P:67 SP:FB PPU:  0, 00 CYC:0
+CF34  38        SEC                             A:00 X:55 Y:69 P:27 SP:FB PPU:  0, 00 CYC:0
+CF35  A9 55     LDA #$55                        A:00 X:55 Y:69 P:27 SP:FB PPU:  0, 00 CYC:0
+CF37  0A        ASL A                           A:55 X:55 Y:69 P:25 SP:FB PPU:  0, 00 CYC:0
+CF38  B0 0D     BCS $CF47                       A:AA X:55 Y:69 P:A4 SP:FB PPU:  0, 00 CYC:0
+CF3A  F0 0B     BEQ $CF47                       A:AA X:55 Y:69 P:A4 SP:FB PPU:  0, 00 CYC:0
+CF3C  10 09     BPL $CF47                       A:AA X:55 Y:69 P:A4 SP:FB PPU:  0, 00 CYC:0
+CF3E  70 07     BVS $CF47                       A:AA X:55 Y:69 P:A4 SP:FB PPU:  0, 00 CYC:0
+CF40  C9 AA     CMP #$AA                        A:AA X:55 Y:69 P:A4 SP:FB PPU:  0, 00 CYC:0
+CF42  D0 03     BNE $CF47                       A:AA X:55 Y:69 P:27 SP:FB PPU:  0, 00 CYC:0
+CF44  4C 4B CF  JMP $CF4B                       A:AA X:55 Y:69 P:27 SP:FB PPU:  0, 00 CYC:0
+CF4B  EA        NOP                             A:AA X:55 Y:69 P:27 SP:FB PPU:  0, 00 CYC:0
+CF4C  24 01     BIT $01 = FF                    A:AA X:55 Y:69 P:27 SP:FB PPU:  0, 00 CYC:0
+CF4E  38        SEC                             A:AA X:55 Y:69 P:E5 SP:FB PPU:  0, 00 CYC:0
+CF4F  A9 01     LDA #$01                        A:AA X:55 Y:69 P:E5 SP:FB PPU:  0, 00 CYC:0
+CF51  6A        Unknown                             A:01 X:55 Y:69 P:65 SP:FB PPU:  0, 00 CYC:0

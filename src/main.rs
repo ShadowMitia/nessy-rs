@@ -1187,22 +1187,25 @@ mod rp2a03 {
 
         pub fn asl(registers: &mut Registers, memory: &mut Memory, addr: u16, val: u16) {
             let mut m = val;
-            let c = (m & 0b10000000) as u8;
+            let c = (m & 0b10000000) as u8 == 0b10000000;
 
             m <<= 1;
             memory.memory[addr as usize] = m as u8;
-            registers.status |= c;
 
-            if m == 0 {
-                registers.set_flag(StatusFlag::Z, true);
-            } else {
-                registers.set_flag(StatusFlag::Z, false);
-            };
-            if m >= 0x80 {
-                registers.set_flag(StatusFlag::N, true);
-            } else {
-                registers.set_flag(StatusFlag::N, false);
-            };
+            registers.set_flag(StatusFlag::Z, m == 0);
+            registers.set_flag(StatusFlag::N, m >= 0x80);
+            registers.set_flag(StatusFlag::C, c);
+        }
+
+        pub fn asl_acc(registers: &mut Registers) {
+            let mut m = registers.a;
+            let c = (m & 0b10000000) as u8 == 0b10000000;
+            m <<= 1;
+            registers.a = m as u8;
+
+            registers.set_flag(StatusFlag::Z, m == 0);
+            registers.set_flag(StatusFlag::N, m >= 0x80);
+            registers.set_flag(StatusFlag::C, c);
         }
 
         #[test]
@@ -1772,7 +1775,7 @@ mod rp2a03 {
 
         pub fn lsr_acc(registers: &mut Registers) {
             let m = registers.a;
-            let carry = m as u8 & 0b1== 0b1;
+            let carry = m as u8 & 0b1 == 0b1;
             let m = m >> 1;
             registers.a = m;
             registers.set_flag(StatusFlag::C, carry);
@@ -2597,7 +2600,12 @@ fn main() {
                 registers.pc += num_operands;
             }
             Instructions::ASL => {
-                asl(&mut registers, &mut memory, bytes, addr);
+                if addressing_mode == AddressingMode::Accumulator {
+                    asl_acc(&mut registers);
+                } else {
+                    asl(&mut registers, &mut memory, bytes, addr);
+                }
+
                 registers.pc += num_operands;
             }
             Instructions::RTI => {
