@@ -774,7 +774,7 @@ mod rp2a03 {
         }
 
         pub fn tay(registers: &mut Registers) {
-            registers.a = registers.y;
+            registers.y = registers.a;
             registers.set_flag(StatusFlag::Z, registers.a == 0);
             registers.set_flag(StatusFlag::N, registers.a >= 0x80);
         }
@@ -782,11 +782,17 @@ mod rp2a03 {
         #[test]
         fn tay_test() {
             let mut registers = Registers::new();
-            registers.y = 0x42;
-
+            registers.a = 0x42;
             registers.pc += 1; // Simulate reading insruction
             tay(&mut registers);
             assert_eq!(registers.a, 0x42);
+            assert_eq!(registers.y, 0x42);
+
+            registers.a = 0x99;
+            registers.pc += 1; // Simulate reading insruction
+            tay(&mut registers);
+            assert_eq!(registers.a, 0x99);
+            assert_eq!(registers.y, 0x99);
         }
 
         pub fn cpy(registers: &mut Registers, value: u16) {

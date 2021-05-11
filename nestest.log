@@ -676,20 +676,37 @@ CCB5  A0 99     LDY #$99                        A:85 X:34 Y:69 P:25 SP:FB PPU:  
 CCB7  18        CLC                             A:85 X:34 Y:99 P:A5 SP:FB PPU:  0, 00 CYC:0
 CCB8  24 01     BIT $01 = FF                    A:85 X:34 Y:99 P:A4 SP:FB PPU:  0, 00 CYC:0
 CCBA  A8        TAY                             A:85 X:34 Y:99 P:E4 SP:FB PPU:  0, 00 CYC:0
-CCBB  F0 2E     BEQ $CCEB                       A:99 X:34 Y:99 P:E4 SP:FB PPU:  0, 00 CYC:0
-CCBD  B0 2C     BCS $CCEB                       A:99 X:34 Y:99 P:E4 SP:FB PPU:  0, 00 CYC:0
-CCBF  50 2A     BVC $CCEB                       A:99 X:34 Y:99 P:E4 SP:FB PPU:  0, 00 CYC:0
-CCC1  10 28     BPL $CCEB                       A:99 X:34 Y:99 P:E4 SP:FB PPU:  0, 00 CYC:0
-CCC3  C9 85     CMP #$85                        A:99 X:34 Y:99 P:E4 SP:FB PPU:  0, 00 CYC:0
-CCC5  D0 24     BNE $CCEB                       A:99 X:34 Y:99 P:65 SP:FB PPU:  0, 00 CYC:0
-CCEB  A2 41     LDX #$41                        A:99 X:34 Y:99 P:65 SP:FB PPU:  0, 00 CYC:0
-CCED  86 00     STX $00 = 00                    A:99 X:41 Y:99 P:65 SP:FB PPU:  0, 00 CYC:0
-CCEF  EA        NOP                             A:99 X:41 Y:99 P:65 SP:FB PPU:  0, 00 CYC:0
-CCF0  A9 85     LDA #$85                        A:99 X:41 Y:99 P:65 SP:FB PPU:  0, 00 CYC:0
-CCF2  A2 34     LDX #$34                        A:85 X:41 Y:99 P:E5 SP:FB PPU:  0, 00 CYC:0
-CCF4  A0 99     LDY #$99                        A:85 X:34 Y:99 P:65 SP:FB PPU:  0, 00 CYC:0
-CCF6  18        CLC                             A:85 X:34 Y:99 P:E5 SP:FB PPU:  0, 00 CYC:0
-CCF7  24 01     BIT $01 = FF                    A:85 X:34 Y:99 P:E4 SP:FB PPU:  0, 00 CYC:0
+CCBB  F0 2E     BEQ $CCEB                       A:85 X:34 Y:85 P:E4 SP:FB PPU:  0, 00 CYC:0
+CCBD  B0 2C     BCS $CCEB                       A:85 X:34 Y:85 P:E4 SP:FB PPU:  0, 00 CYC:0
+CCBF  50 2A     BVC $CCEB                       A:85 X:34 Y:85 P:E4 SP:FB PPU:  0, 00 CYC:0
+CCC1  10 28     BPL $CCEB                       A:85 X:34 Y:85 P:E4 SP:FB PPU:  0, 00 CYC:0
+CCC3  C9 85     CMP #$85                        A:85 X:34 Y:85 P:E4 SP:FB PPU:  0, 00 CYC:0
+CCC5  D0 24     BNE $CCEB                       A:85 X:34 Y:85 P:67 SP:FB PPU:  0, 00 CYC:0
+CCC7  E0 34     CPX #$34                        A:85 X:34 Y:85 P:67 SP:FB PPU:  0, 00 CYC:0
+CCC9  D0 20     BNE $CCEB                       A:85 X:34 Y:85 P:67 SP:FB PPU:  0, 00 CYC:0
+CCCB  C0 85     CPY #$85                        A:85 X:34 Y:85 P:67 SP:FB PPU:  0, 00 CYC:0
+CCCD  D0 1C     BNE $CCEB                       A:85 X:34 Y:85 P:67 SP:FB PPU:  0, 00 CYC:0
+CCCF  A9 00     LDA #$00                        A:85 X:34 Y:85 P:67 SP:FB PPU:  0, 00 CYC:0
+CCD1  38        SEC                             A:00 X:34 Y:85 P:67 SP:FB PPU:  0, 00 CYC:0
+CCD2  B8        CLV                             A:00 X:34 Y:85 P:67 SP:FB PPU:  0, 00 CYC:0
+CCD3  A8        TAY                             A:00 X:34 Y:85 P:27 SP:FB PPU:  0, 00 CYC:0
+CCD4  D0 15     BNE $CCEB                       A:00 X:34 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+CCD6  90 13     BCC $CCEB                       A:00 X:34 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+CCD8  70 11     BVS $CCEB                       A:00 X:34 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+CCDA  30 0F     BMI $CCEB                       A:00 X:34 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+CCDC  C9 00     CMP #$00                        A:00 X:34 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+CCDE  D0 0B     BNE $CCEB                       A:00 X:34 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+CCE0  E0 34     CPX #$34                        A:00 X:34 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+CCE2  D0 07     BNE $CCEB                       A:00 X:34 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+CCE4  C0 00     CPY #$00                        A:00 X:34 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+CCE6  D0 03     BNE $CCEB                       A:00 X:34 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+CCE8  4C EF CC  JMP $CCEF                       A:00 X:34 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+CCEF  EA        NOP                             A:00 X:34 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+CCF0  A9 85     LDA #$85                        A:00 X:34 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+CCF2  A2 34     LDX #$34                        A:85 X:34 Y:00 P:A5 SP:FB PPU:  0, 00 CYC:0
+CCF4  A0 99     LDY #$99                        A:85 X:34 Y:00 P:25 SP:FB PPU:  0, 00 CYC:0
+CCF6  18        CLC                             A:85 X:34 Y:99 P:A5 SP:FB PPU:  0, 00 CYC:0
+CCF7  24 01     BIT $01 = FF                    A:85 X:34 Y:99 P:A4 SP:FB PPU:  0, 00 CYC:0
 CCF9  AA        TAX                             A:85 X:34 Y:99 P:E4 SP:FB PPU:  0, 00 CYC:0
 CCFA  F0 2E     BEQ $CD2A                       A:85 X:85 Y:99 P:E4 SP:FB PPU:  0, 00 CYC:0
 CCFC  B0 2C     BCS $CD2A                       A:85 X:85 Y:99 P:E4 SP:FB PPU:  0, 00 CYC:0
@@ -808,7 +825,7 @@ CDD7  BA        TSX                             A:04 X:00 Y:01 P:27 SP:FA PPU:  
 CDD8  F0 15     BEQ $CDEF                       A:04 X:FA Y:01 P:A5 SP:FA PPU:  0, 00 CYC:0
 CDDA  30 13     BMI $CDEF                       A:04 X:FA Y:01 P:A5 SP:FA PPU:  0, 00 CYC:0
 CDEF  A2 45     LDX #$45                        A:04 X:FA Y:01 P:A5 SP:FA PPU:  0, 00 CYC:0
-CDF1  86 00     STX $00 = 41                    A:04 X:45 Y:01 P:25 SP:FA PPU:  0, 00 CYC:0
+CDF1  86 00     STX $00 = 00                    A:04 X:45 Y:01 P:25 SP:FA PPU:  0, 00 CYC:0
 CDF3  AE FF 07  LDX $07FF                       A:04 X:45 Y:01 P:25 SP:FA PPU:  0, 00 CYC:0
 CDF6  9A        TXS                             A:04 X:FF Y:01 P:A5 SP:FA PPU:  0, 00 CYC:0
 CDF7  60        RTS                             A:04 X:FF Y:01 P:A5 SP:F9 PPU:  0, 00 CYC:0
@@ -987,3 +1004,99 @@ C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  
 6B02  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
 C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
 6B05  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B08  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B0B  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B0E  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B11  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B14  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B17  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B1A  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B1D  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B20  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B23  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B26  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B29  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B2C  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B2F  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B32  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B35  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B38  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B3B  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B3E  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B41  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B44  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B47  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B4A  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B4D  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B50  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B53  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B56  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B59  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B5C  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B5F  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B62  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B65  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B68  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B6B  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B6E  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B71  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B74  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B77  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B7A  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B7D  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B80  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B83  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B86  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B89  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B8C  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B8F  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B92  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
+C5F4  40        RTI                             A:04 X:FF Y:01 P:B5 SP:F8 PPU:  0, 00 CYC:0
+6B95  00        BRK                             A:04 X:FF Y:01 P:B5 SP:FB PPU:  0, 00 CYC:0
