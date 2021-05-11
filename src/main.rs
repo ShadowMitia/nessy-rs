@@ -190,6 +190,7 @@ mod rp2a03 {
             DEX,
             LSR,
             ROR,
+            ROL,
             Unknown,
         }
 
@@ -411,6 +412,12 @@ mod rp2a03 {
                 0x76 => (Instructions::ROR, AddressingMode::ZeroPageIndexedWithX),
                 0x6E => (Instructions::ROR, AddressingMode::Absolute),
                 0x7E => (Instructions::ROR, AddressingMode::AbsoluteIndirect),
+                // ROL
+                0x2A => (Instructions::ROL, AddressingMode::Accumulator),
+                0x26 => (Instructions::ROL, AddressingMode::ZeroPage),
+                0x36 => (Instructions::ROL, AddressingMode::ZeroPageIndexedWithX),
+                0x2E => (Instructions::ROL, AddressingMode::Absolute),
+                0x3E => (Instructions::ROL, AddressingMode::AbsoluteIndirectWithX),
                 // UNKNOWN
                 _ => (Instructions::Unknown, AddressingMode::Implied),
             }
@@ -1819,7 +1826,7 @@ mod rp2a03 {
             let bit0 = m as u8 & 0b1 == 0b1;
             let mut m = m >> 1;
             let carry = registers.is_flag_set(StatusFlag::C);
-            m |= if carry { 1 } else { 0 };
+            m |= if carry { 1 << 7} else { 0 };
             memory.memory[addr as usize] = m;
             registers.set_flag(StatusFlag::C, bit0);
             registers.set_flag(StatusFlag::Z, m == 0);
@@ -1855,6 +1862,49 @@ mod rp2a03 {
             registers.set_flag(StatusFlag::C, true);
             ror_acc(&mut registers);
             assert_eq!(registers.a, 0x82);
+        }
+
+        pub fn rol(registers: &mut Registers, memory: &mut Memory, addr: u16) {
+            let m = memory.memory[addr as usize];
+            let bit7 = m as u8 & 0b1 == 0b1;
+            let mut m = m << 1;
+            let carry = registers.is_flag_set(StatusFlag::C);
+            m |= if carry { 1 } else { 0 };
+            memory.memory[addr as usize] = m;
+            registers.set_flag(StatusFlag::C, bit7);
+            registers.set_flag(StatusFlag::Z, m == 0);
+            registers.set_flag(StatusFlag::N, m >= 0x80);
+        }
+
+        pub fn rol_acc(registers: &mut Registers) {
+            let m = registers.a;
+            let bit7 = m as u8 & 0b10000000 == 0b10000000;
+            let mut m = m << 1;
+            let carry = registers.is_flag_set(StatusFlag::C);
+            m |= if carry { 1  } else { 0 };
+            registers.a = m;
+            registers.set_flag(StatusFlag::C, bit7);
+            registers.set_flag(StatusFlag::Z, registers.a == 0);
+            registers.set_flag(StatusFlag::N, registers.a >= 0x80);
+        }
+
+        #[test]
+        fn rol_test() {
+            let mut registers = Registers::new();
+            let mut memory = Memory::new();
+
+            memory.memory[0x42] = 0x4;
+            rol(&mut registers, &mut memory, 0x42);
+            assert_eq!(memory.memory[0x42], 0x8);
+
+            registers.a = 0x4;
+            rol_acc(&mut registers);
+            assert_eq!(registers.a, 0x8);
+
+            registers.a = 0x4;
+            registers.set_flag(StatusFlag::C, true);
+            rol_acc(&mut registers);
+            assert_eq!(registers.a, 0x9);
         }
 
         /**
@@ -2763,6 +2813,14 @@ fn main() {
                     ror_acc(&mut registers);
                 } else {
                     ror(&mut registers, &mut memory, addr);
+                }
+                registers.pc += num_operands;
+            }
+            Instructions::ROL => {
+                if addressing_mode == AddressingMode::Accumulator {
+                    rol_acc(&mut registers);
+                } else {
+                    rol(&mut registers, &mut memory, addr);
                 }
                 registers.pc += num_operands;
             }
