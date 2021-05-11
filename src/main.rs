@@ -185,7 +185,8 @@ mod rp2a03 {
             TYA,
             TXA,
             TSX,
-            Unknwon,
+            DEX,
+            Unknown,
         }
 
         #[must_use]
@@ -391,7 +392,9 @@ mod rp2a03 {
                 0x8A => (Instructions::TXA, AddressingMode::Implied),
                 // TSX
                 0xBA => (Instructions::TSX, AddressingMode::Implied),
-                _ => (Instructions::Unknwon, AddressingMode::Implied),
+                // DEX
+                0xCA => (Instructions::DEX, AddressingMode::Implied),
+                _ => (Instructions::Unknown, AddressingMode::Implied),
             }
         }
 
@@ -1731,6 +1734,26 @@ mod rp2a03 {
             assert_eq!(registers.x, memory.stack_pointer as u8);
         }
 
+        pub fn dex(registers: &mut Registers, addr: u16) {
+            registers.x = (registers.x as i16 - 1) as u8;
+            registers.set_flag(StatusFlag::Z, registers.x == 0);
+            registers.set_flag(StatusFlag::N, registers.x >= 0x80);
+        }
+
+        #[test]
+        fn dex_test() {
+            let mut registers = Registers::new();
+
+            dex(&mut registers, 0x1);
+            assert_eq!(registers.x, 0xFF);
+            assert_eq!(registers.status, 0b10000000);
+
+            registers.x = 0x43;
+            dex(&mut registers, 0x1);
+            assert_eq!(registers.x, 0x42);
+            assert_eq!(registers.status, 0b00000000);
+        }
+
         /**
         Applies addressing mode rules to operands and gives out 16-bit results
          */
@@ -2573,8 +2596,12 @@ fn main() {
                 tsx(&mut registers, &mut memory);
                 registers.pc += num_operands;
             }
+            Instructions::DEX => {
+                dex(&mut registers, addr);
+                registers.pc += num_operands;
+            }
 
-            Instructions::Unknwon => {
+            Instructions::Unknown => {
                 eprintln!(
                     "Unknown opcode {:#x}",
                     memory.memory[(registers.pc - 1) as usize]
