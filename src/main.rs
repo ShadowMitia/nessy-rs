@@ -186,6 +186,7 @@ mod rp2a03 {
             TXA,
             TSX,
             DEX,
+            LSR,
             Unknown,
         }
 
@@ -394,6 +395,12 @@ mod rp2a03 {
                 0xBA => (Instructions::TSX, AddressingMode::Implied),
                 // DEX
                 0xCA => (Instructions::DEX, AddressingMode::Implied),
+                // LSR
+                0x4A => (Instructions::LSR, AddressingMode::Accumulator),
+                0x46 => (Instructions::LSR, AddressingMode::ZeroPage),
+                0x56 => (Instructions::LSR, AddressingMode::ZeroPageIndexedWithX),
+                0x4E => (Instructions::LSR, AddressingMode::Absolute),
+                0x5E => (Instructions::LSR, AddressingMode::AbsoluteIndirectWithX),
                 _ => (Instructions::Unknown, AddressingMode::Implied),
             }
         }
@@ -538,14 +545,14 @@ mod rp2a03 {
             let mut memory = Memory::new();
 
             registers.pc += 1; // Simulate reading insruction
-            ldx(&mut registers,  0x42);
+            ldx(&mut registers, 0x42);
             assert_eq!(registers.x, 0x42);
             registers.pc += 1; // Simulate reading insruction
             ldx(&mut registers, 0x0);
             assert_eq!(registers.x, 0x0);
             assert_eq!(registers.status & 0b00000010, 0b00000010);
             registers.pc += 1; // Simulate reading insruction
-            ldx(&mut registers,  0x80);
+            ldx(&mut registers, 0x80);
             assert_eq!(registers.x, 0x80);
             assert_eq!(registers.status & 0b10000000, 0b10000000);
         }
@@ -1753,6 +1760,40 @@ mod rp2a03 {
             assert_eq!(registers.status, 0b00000000);
         }
 
+        pub fn lsr(registers: &mut Registers, memory: &mut Memory, addr: u16) {
+            let m = memory.memory[addr as usize];
+            let carry = m as u8 & 0b1 == 0b1;
+            let m = m >> 1;
+            memory.memory[addr as usize] = m;
+            registers.set_flag(StatusFlag::C, carry);
+            registers.set_flag(StatusFlag::Z, m == 0);
+            registers.set_flag(StatusFlag::N, m >= 0x80);
+        }
+
+        pub fn lsr_acc(registers: &mut Registers) {
+            let m = registers.a;
+            let carry = m as u8 & 0b1== 0b1;
+            let m = m >> 1;
+            registers.a = m;
+            registers.set_flag(StatusFlag::C, carry);
+            registers.set_flag(StatusFlag::Z, registers.a == 0);
+            registers.set_flag(StatusFlag::N, registers.a >= 0x80);
+        }
+
+        #[test]
+        fn lsr_test() {
+            let mut registers = Registers::new();
+            let mut memory = Memory::new();
+
+            memory.memory[0x42] = 0x4;
+            lsr(&mut registers, &mut memory, 0x42);
+            assert_eq!(memory.memory[0x42], 0x2);
+
+            registers.a = 0x4;
+            lsr_acc(&mut registers);
+            assert_eq!(registers.a, 0x2);
+        }
+
         /**
         Applies addressing mode rules to operands and gives out 16-bit results
          */
@@ -1822,7 +1863,7 @@ mod rp2a03 {
 
         pub fn num_operands_from_addressing(adressing_mode: &AddressingMode) -> u8 {
             match adressing_mode {
-                AddressingMode::Accumulator => 1,
+                AddressingMode::Accumulator => 0,
                 AddressingMode::Implied => 0,
                 AddressingMode::Immediate => 1,
                 AddressingMode::Absolute => 2,
@@ -2354,7 +2395,10 @@ fn main() {
                     _ => write!(nestest_output, "        ").unwrap(),
                 },
             },
-            _ => write!(nestest_output, "        ").unwrap(),
+            _ => match addressing_mode {
+                AddressingMode::Accumulator => write!(nestest_output, "A       ").unwrap(),
+                _ => write!(nestest_output, "        ").unwrap(),
+            },
         };
 
         write!(nestest_output, "                    ").unwrap();
@@ -2631,6 +2675,15 @@ fn main() {
             }
             Instructions::DEX => {
                 dex(&mut registers, addr);
+                registers.pc += num_operands;
+            }
+            Instructions::LSR => {
+                if addressing_mode == AddressingMode::Accumulator {
+                    lsr_acc(&mut registers);
+                } else {
+                    lsr(&mut registers, &mut memory, addr);
+                }
+
                 registers.pc += num_operands;
             }
 
