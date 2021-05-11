@@ -10,6 +10,7 @@ mod rp2a03 {
     pc is a 16-bit program counter
     status hold processore flag bits (7 flags)
     */
+    #[derive(Debug, Clone)]
     pub struct Registers {
         pub a: u8,
         pub x: u8,
@@ -24,6 +25,7 @@ mod rp2a03 {
     pub enum StatusFlag {
         N = 7,
         V = 6,
+        Unused = 5,
         B = 4,
         D = 3,
         I = 2,
@@ -51,7 +53,7 @@ mod rp2a03 {
             }
         }
 
-        pub fn is_flag_set(&mut self, flag: StatusFlag) -> bool {
+        pub fn is_flag_set(&self, flag: StatusFlag) -> bool {
             let val = 0x1 << flag as u8;
             self.status & val == val
         }
@@ -183,6 +185,7 @@ mod rp2a03 {
             TYA,
             TXA,
             TSX,
+            Unknwon,
         }
 
         #[must_use]
@@ -388,7 +391,7 @@ mod rp2a03 {
                 0x8A => (Instructions::TXA, AddressingMode::Implied),
                 // TSX
                 0xBA => (Instructions::TSX, AddressingMode::Implied),
-                _ => panic!("Unknown opcode {:#x}", opcode),
+                _ => (Instructions::Unknwon, AddressingMode::Implied),
             }
         }
 
@@ -576,25 +579,27 @@ mod rp2a03 {
         #[test]
         fn and_test() {
             let mut registers = Registers::new();
-            let mut memory = Memory::new();
 
             registers.a = 0b00000001;
-            memory.memory[0x1] = 0b00000001;
             registers.pc += 1; // Simulate reading insruction
             and(&mut registers, 0x1);
             assert_eq!(registers.a, 1);
 
             registers.a = 0b00000000;
-            memory.memory[0x1] = 0b00000001;
             registers.pc += 1; // Simulate reading insruction
             and(&mut registers, 0x1);
             assert_eq!(registers.a, 0);
+
+            registers.a = 0x6F;
+            registers.pc += 1; // Simulate reading insruction
+            and(&mut registers, 0xEF);
+            assert_eq!(registers.a, 0x6F);
         }
 
         #[must_use]
         pub fn beq(registers: &mut Registers, value: u16) -> bool {
             // Check if zero flag is enabled
-            if (registers.status & 0b00000010) == 0b00000010 {
+            if registers.is_flag_set(StatusFlag::Z) {
                 if value >= 0x80 {
                     let value = (value as i32 - (1 << 8)) as i16;
                     registers.pc = 1 + (registers.pc as i16 + value) as u16;
@@ -629,52 +634,53 @@ mod rp2a03 {
             assert_eq!(registers.pc, 0x42);
         }
 
-        pub fn cpx(registers: &mut Registers, memory: &mut Memory, value: u16) {
-            registers.status &= 0b01111100;
+        pub fn cpx(registers: &mut Registers, value: u16) {
+            registers.set_flag(StatusFlag::C, false);
+            registers.set_flag(StatusFlag::Z, false);
 
-            match registers.x.cmp(&memory.memory[value as usize]) {
+            match registers.x.cmp(&(value as u8)) {
                 std::cmp::Ordering::Less => {
                     // registers.status &= 0b00000000;
                 }
                 std::cmp::Ordering::Equal => {
-                    registers.status |= 0b00000011;
+                    registers.set_flag(StatusFlag::C, true);
+                    registers.set_flag(StatusFlag::Z, true);
                 }
-                std::cmp::Ordering::Greater => registers.status |= 0b00000001,
+                std::cmp::Ordering::Greater => registers.set_flag(StatusFlag::C, true),
             }
 
-            if (registers.x as i32 - memory.memory[value as usize] as i32) < 0 {
-                registers.status |= 0b10000000;
-            }
+            let res = if value >= 0x80 {
+                let value = value as i16 - (1 << 8);
+                (registers.x as i16 - value as i16) as u8
+            } else {
+                (registers.x as i16 - value as i16) as u8
+            };
+            registers.set_flag(StatusFlag::N, res >= 0x80);
         }
 
         #[test]
         fn cpx_test() {
             let mut registers = Registers::new();
-            let mut memory = Memory::new();
 
             registers.x = 0x10;
-            memory.memory[0x42] = 0x10;
             registers.pc += 1; // Simulate reading insruction
-            cpx(&mut registers, &mut memory, 0x42);
+            cpx(&mut registers, 0x10);
             assert_eq!(registers.status, 0b00000011);
 
             registers.x = 0x9;
-            memory.memory[0x42] = 0x10;
             registers.pc += 1; // Simulate reading insruction
-            cpx(&mut registers, &mut memory, 0x42);
+            cpx(&mut registers, 0x10);
             assert_eq!(registers.status, 0b10000000);
 
             registers.x = 0x10;
-            memory.memory[0x42] = 0x9;
             registers.pc += 1; // Simulate reading insruction
-            cpx(&mut registers, &mut memory, 0x42);
+            cpx(&mut registers, 0x9);
             assert_eq!(registers.status, 0b00000001);
 
             registers.x = 0xFF;
-            memory.memory[0x42] = 0x10;
             registers.pc += 1; // Simulate reading insruction
-            cpx(&mut registers, &mut memory, 0x42);
-            assert_eq!(registers.status, 0b00000001);
+            cpx(&mut registers, 0x10);
+            assert_eq!(registers.status, 0b10000001);
         }
 
         pub fn dey(registers: &mut Registers) {
@@ -709,8 +715,7 @@ mod rp2a03 {
 
         #[must_use]
         pub fn bpl(registers: &mut Registers, value: u16) -> bool {
-            // Check if zero flag is enabled
-            if (registers.status & 0b10000000) == 0b00000000 {
+            if !registers.is_flag_set(StatusFlag::N) {
                 if value >= 0x80 {
                     let value = (value as i32 - (1 << 8)) as i16;
                     registers.pc = 1 + (registers.pc as i16 + value) as u16;
@@ -738,33 +743,37 @@ mod rp2a03 {
             assert_eq!(registers.y, 0xFF);
         }
 
-        pub fn apl(registers: &mut Registers, memory: &mut Memory) {
+        pub fn pla(registers: &mut Registers, memory: &mut Memory) {
             registers.a = memory.stack_pop();
+
+            registers.set_flag(StatusFlag::Z, registers.a == 0);
+            registers.set_flag(StatusFlag::N, registers.a >= 0x80);
         }
 
         #[test]
-        fn apl_test() {
+        fn pla_test() {
             let mut registers = Registers::new();
             let mut memory = Memory::new();
 
             memory.stack_push(0x42);
             registers.pc += 1; // Simulate reading insruction
-            apl(&mut registers, &mut memory);
+            pla(&mut registers, &mut memory);
             assert_eq!(registers.a, 0x42);
+            assert_eq!(memory.stack_pointer, 0x1FF);
+
+            memory.stack_push(0x6F);
+            registers.status = 0x6F;
+            registers.pc += 1; // Simulate reading insruction
+            pla(&mut registers, &mut memory);
+            assert_eq!(registers.a, 0x6F);
+            assert_eq!(memory.stack_pointer, 0x1FF);
+            assert_eq!(registers.status, 0x6D);
         }
 
         pub fn tay(registers: &mut Registers) {
             registers.a = registers.y;
-            registers.status = if registers.a == 0 {
-                registers.status | 0b00000010
-            } else {
-                registers.status & 0b11111101
-            };
-            registers.status = if registers.a >= 0x80 {
-                registers.status | 0b10000000
-            } else {
-                registers.status & 0b01111111
-            };
+            registers.set_flag(StatusFlag::Z, registers.a == 0);
+            registers.set_flag(StatusFlag::N, registers.a >= 0x80);
         }
 
         #[test]
@@ -777,46 +786,48 @@ mod rp2a03 {
             assert_eq!(registers.a, 0x42);
         }
 
-        pub fn cpy(registers: &mut Registers, memory: &mut Memory, value: u16) {
-            registers.status &= 0b01111100;
+        pub fn cpy(registers: &mut Registers, value: u16) {
+            registers.set_flag(StatusFlag::C, false);
+            registers.set_flag(StatusFlag::Z, false);
 
-            match registers.y.cmp(&memory.memory[value as usize]) {
+            match registers.y.cmp(&(value as u8)) {
                 std::cmp::Ordering::Less => {
                     // registers.status &= 0b00000000;
                 }
                 std::cmp::Ordering::Equal => {
-                    registers.status |= 0b00000011;
+                    registers.set_flag(StatusFlag::C, true);
+                    registers.set_flag(StatusFlag::Z, true);
                 }
-                std::cmp::Ordering::Greater => registers.status |= 0b00000001,
+                std::cmp::Ordering::Greater => registers.set_flag(StatusFlag::C, true),
             }
 
-            if (registers.y as i32 - memory.memory[value as usize] as i32) < 0 {
-                registers.status |= 0b10000000;
-            }
+            let res = if value >= 0x80 {
+                let value = (value as i32 - (1 << 8)) as i16;
+                (registers.y as i16 - value as i16) as u8
+            } else {
+                (registers.y as i16 - value as i16) as u8
+            };
+            registers.set_flag(StatusFlag::N, res >= 0x80);
         }
 
         #[test]
         fn cpy_test() {
             let mut registers = Registers::new();
-            let mut memory = Memory::new();
 
             registers.y = 0x10;
-            memory.memory[0x42] = 0x10;
             registers.pc += 1; // Simulate reading insruction
-            cpy(&mut registers, &mut memory, 0x42);
+            cpy(&mut registers, 0x10);
             assert_eq!(registers.status, 0b00000011);
 
             registers.y = 0x9;
-            memory.memory[0x42] = 0x10;
             registers.pc += 1; // Simulate reading insruction
-            cpy(&mut registers, &mut memory, 0x42);
+            cpy(&mut registers, 0x10);
             assert_eq!(registers.status, 0b10000000);
 
             registers.y = 0xFF;
-            memory.memory[0x42] = 0x10;
             registers.pc += 1; // Simulate reading insruction
-            cpy(&mut registers, &mut memory, 0x42);
-            assert_eq!(registers.status, 0b00000001);
+            cpy(&mut registers, 0x10);
+            assert_eq!(registers.status, 0b10000001);
         }
 
         #[must_use]
@@ -824,7 +835,7 @@ mod rp2a03 {
             // Check if zero flag is not enabled
             if !registers.is_flag_set(StatusFlag::Z) {
                 if value >= 0x80 {
-                    let value = (value as i32 - (1 << 8)) as i16;
+                    let value = (value as i16 - (1 << 8)) as i16;
                     registers.pc = 1 + (registers.pc as i16 + value) as u16;
                 } else {
                     registers.pc = 1 + (registers.pc as i16 + value as i16) as u16;
@@ -849,6 +860,12 @@ mod rp2a03 {
             registers.pc += 1; // Simulate reading insruction
             let _ = bne(&mut registers, 0x10);
             assert_eq!(registers.pc, 0x12);
+
+            registers.status = 0xE4;
+            registers.pc = 0xC957;
+            registers.pc += 1; // Simulate reading insruction
+            let _ = bne(&mut registers, 0x5);
+            assert_eq!(registers.pc, 0xC95E);
         }
 
         pub fn rts(registers: &mut Registers, memory: &mut Memory) {
@@ -1020,7 +1037,9 @@ mod rp2a03 {
         }
 
         pub fn php(registers: &mut Registers, memory: &mut Memory) {
+            registers.set_flag(StatusFlag::B, true);
             memory.stack_push(registers.status);
+            registers.set_flag(StatusFlag::B, false);
         }
 
         #[test]
@@ -1030,7 +1049,7 @@ mod rp2a03 {
             registers.status = 0b10101010;
             registers.pc += 1; // Simulate reading insruction
             php(&mut registers, &mut memory);
-            assert_eq!(memory.memory[0x01FF], 0b10101010);
+            assert_eq!(memory.memory[0x01FF], 0b10111010);
         }
 
         pub fn bit(registers: &mut Registers, memory: &mut Memory, addr: u16) {
@@ -1209,35 +1228,25 @@ mod rp2a03 {
             assert_eq!(registers.pc, 0x2);
         }
 
-        pub fn sbc(registers: &mut Registers, memory: &mut Memory, addr: u16) {
-            // ~CARRY
-            let carry = 1 - if registers.is_flag_set(StatusFlag::C) {
-                1
-            } else {
+        pub fn sbc(registers: &mut Registers, addr: u16) {
+            let carry = if registers.is_flag_set(StatusFlag::C) {
                 0
+            } else {
+                1
             } as u8;
 
-            let a = if registers.a >= 0x80 {
-                (registers.a as i32 - (1 << 8)) as i16
-            } else {
-                registers.a as i16
-            };
+            let a = registers.a;
+            let m = addr as u8;
 
-            let m = memory.memory[addr as usize];
-            let m = if m >= 0x80 {
-                (m as i32 - (1 << 8)) as i16
-            } else {
-                m as i16
-            };
-
-            let temp = a as i32 - m as i32 - carry as i32;
-
-            let carry = (1 << 9) & temp == (1 << 9);
+            let temp = (a as i16 - m as i16 - carry as i16) as u16;
 
             registers.a = temp as u8;
 
-            registers.set_flag(StatusFlag::C, !carry);
-            registers.set_flag(StatusFlag::V, carry);
+            registers.set_flag(StatusFlag::C, (1 << 8) & temp != (1 << 8));
+            registers.set_flag(
+                StatusFlag::V,
+                a >= 0x80 && m <= 0x80 && temp < 0x80 || a < 0x80 && m > 0x80 && temp >= 0x80,
+            );
             registers.set_flag(StatusFlag::Z, registers.a == 0);
             registers.set_flag(StatusFlag::N, registers.a >= 0x80);
         }
@@ -1245,15 +1254,20 @@ mod rp2a03 {
         #[test]
         fn sbc_test() {
             let mut registers = Registers::new();
-            let mut memory = Memory::new();
 
             registers.status = 0x65;
             registers.a = 0x40;
             registers.pc += 1; // Simulate instruction READ
-            memory.memory[0x2] = 0x40;
-            sbc(&mut registers, &mut memory, 0x2);
+            sbc(&mut registers, 0x40);
             assert_eq!(registers.a, 0x0);
             assert_eq!(registers.status, 0x27);
+
+            registers.status = 0xE5;
+            registers.a = 0x40;
+            registers.pc += 1; // Simulate instruction READ
+            sbc(&mut registers, 0x41);
+            assert_eq!(registers.a, 0xFF);
+            assert_eq!(registers.status, 0xA4);
         }
 
         pub fn sed(registers: &mut Registers) {
@@ -1268,52 +1282,70 @@ mod rp2a03 {
             assert_eq!(registers.status, 0x8)
         }
 
-        pub fn cmp(registers: &mut Registers, memory: &mut Memory, value: u16) {
-            registers.status &= 0b01111100;
+        pub fn cmp(registers: &mut Registers, value: u16) {
+            registers.set_flag(StatusFlag::N, false);
+            registers.set_flag(StatusFlag::C, false);
+            registers.set_flag(StatusFlag::Z, false);
 
-            match registers.a.cmp(&memory.memory[value as usize]) {
+            match registers.a.cmp(&(value as u8)) {
                 std::cmp::Ordering::Less => {
                     // registers.status &= 0b00000000;
                 }
                 std::cmp::Ordering::Equal => {
-                    registers.status |= 0b00000011;
+                    registers.set_flag(StatusFlag::C, true);
+                    registers.set_flag(StatusFlag::Z, true);
                 }
-                std::cmp::Ordering::Greater => registers.status |= 0b00000001,
+                std::cmp::Ordering::Greater => registers.set_flag(StatusFlag::C, true),
             }
 
-            if (registers.a as i32 - memory.memory[value as usize] as i32) < 0 {
-                registers.status |= 0b10000000;
-            }
+            let res = if value >= 0x80 {
+                let value = (value as i32 - (1 << 8)) as i16;
+                (registers.a as i16 - value as i16) as u8
+            } else {
+                (registers.a as i16 - value as i16) as u8
+            };
+            registers.set_flag(StatusFlag::N, res >= 0x80);
         }
 
         #[test]
         fn cmp_test() {
             let mut registers = Registers::new();
-            let mut memory = Memory::new();
 
             registers.a = 0x10;
-            memory.memory[0x42] = 0x10;
             registers.pc += 1; // Simulate reading insruction
-            cmp(&mut registers, &mut memory, 0x42);
+            cmp(&mut registers, 0x10);
             assert_eq!(registers.status, 0b00000011);
 
             registers.a = 0x9;
-            memory.memory[0x42] = 0x10;
             registers.pc += 1; // Simulate reading insruction
-            cmp(&mut registers, &mut memory, 0x42);
+            cmp(&mut registers, 0x10);
             assert_eq!(registers.status, 0b10000000);
 
             registers.a = 0x10;
-            memory.memory[0x42] = 0x9;
             registers.pc += 1; // Simulate reading insruction
-            cmp(&mut registers, &mut memory, 0x42);
+            cmp(&mut registers, 0x9);
             assert_eq!(registers.status, 0b00000001);
 
             registers.a = 0xFF;
-            memory.memory[0x42] = 0x10;
             registers.pc += 1; // Simulate reading insruction
-            cmp(&mut registers, &mut memory, 0x42);
+            cmp(&mut registers, 0x10);
+
+            registers.a = 0x7F;
+            registers.pc += 1; // Simulate reading insruction
+            cmp(&mut registers, 0x6F);
             assert_eq!(registers.status, 0b00000001);
+
+            registers.a = 0x40;
+            registers.pc += 1; // Simulate reading insruction
+            registers.status = 0x25;
+            cmp(&mut registers, 0x41);
+            assert_eq!(registers.status, 0xA4);
+
+            registers.a = 0xFF;
+            registers.pc += 1; // Simulate reading insruction
+            registers.status = 0xA4;
+            cmp(&mut registers, 0xFF);
+            assert_eq!(registers.status, 0x27);
         }
 
         pub fn pha(registers: &mut Registers, memory: &mut Memory) {
@@ -1331,7 +1363,14 @@ mod rp2a03 {
         }
 
         pub fn plp(registers: &mut Registers, memory: &mut Memory) {
+            let old_registers = registers.clone();
             registers.status = memory.stack_pop();
+
+            registers.set_flag(StatusFlag::B, false);
+            registers.set_flag(
+                StatusFlag::Unused,
+                old_registers.is_flag_set(StatusFlag::Unused),
+            );
         }
 
         #[test]
@@ -1339,9 +1378,14 @@ mod rp2a03 {
             let mut registers = Registers::new();
             let mut memory = Memory::new();
 
-            memory.stack_push(0b10101010);
+            memory.stack_push(0xFF);
             plp(&mut registers, &mut memory);
-            assert_eq!(registers.status, 0b10101010);
+            assert_eq!(registers.status, 0xCF);
+
+            memory.stack_push(0xFF);
+            registers.set_flag(StatusFlag::Unused, true);
+            plp(&mut registers, &mut memory);
+            assert_eq!(registers.status, 0xEF);
         }
 
         #[must_use]
@@ -1409,9 +1453,8 @@ mod rp2a03 {
             assert_eq!(registers.is_flag_set(StatusFlag::V), false);
         }
 
-        pub fn eor(registers: &mut Registers, memory: &mut Memory, addr: u16) {
-            let m = memory.memory[addr as usize];
-            registers.a ^= m;
+        pub fn eor(registers: &mut Registers, addr: u16) {
+            registers.a ^= addr as u8;
 
             registers.set_flag(StatusFlag::Z, registers.a == 0);
             registers.set_flag(StatusFlag::N, registers.a >= 0x80);
@@ -1420,22 +1463,21 @@ mod rp2a03 {
         #[test]
         fn eor_test() {
             let mut registers = Registers::new();
-            let mut memory = Memory::new();
-            registers.pc += 1; // Simulate reading insruction
 
             registers.a = 0b1;
-            memory.memory[0x1] = 0b1;
-
-            eor(&mut registers, &mut memory, 0x1);
+            eor(&mut registers, 0x1);
             assert_eq!(registers.a, 0b0);
 
             registers.a = 2;
-            memory.memory[0x1] = 3;
-            eor(&mut registers, &mut memory, 0x1);
-            assert_eq!(registers.a, 0b1);
+            eor(&mut registers, 0x1);
+            assert_eq!(registers.a, 0b11);
+
+            registers.a = 0x5F;
+            eor(&mut registers, 0xAA);
+            assert_eq!(registers.a, 0xF5);
         }
 
-        pub fn adc(registers: &mut Registers, memory: &mut Memory, addr: u16) {
+        pub fn adc(registers: &mut Registers, addr: u16) {
             // ~CARRY
             let carry = if registers.is_flag_set(StatusFlag::C) {
                 1
@@ -1443,27 +1485,31 @@ mod rp2a03 {
                 0
             } as u8;
 
-            let a = if registers.a >= 0x80 {
-                (registers.a as i32 - (1 << 8)) as i16
-            } else {
-                registers.a as i16
-            };
+            // let a = if registers.a >= 0x80 {
+            //     (registers.a as i32 - (1 << 8)) as i16
+            // } else {
+            //     registers.a as i16
+            // };
 
-            let m = memory.memory[addr as usize];
-            let m = if m >= 0x80 {
-                (m as i32 - (1 << 8)) as i16
-            } else {
-                m as i16
-            };
+            // let m = addr;
+            // let m = if m >= 0x80 {
+            //     (m as i32 - (1 << 8)) as i16
+            // } else {
+            //     m as i16
+            // };
 
-            let temp = a as i32 + m as i32 + carry as i32;
+            let a = registers.a;
+            let m = addr as u8;
 
-            let carry = (1 << 9) & temp == (1 << 9);
+            let temp = a as u16 + m as u16 + carry as u16;
 
             registers.a = temp as u8;
 
-            registers.set_flag(StatusFlag::C, !carry);
-            registers.set_flag(StatusFlag::V, carry);
+            registers.set_flag(StatusFlag::C, (1 << 8) & temp == (1 << 8));
+            registers.set_flag(
+                StatusFlag::V,
+                a >= 0x80 && m >= 0x80 && temp < 0x80 || a < 0x80 && m < 0x80 && temp >= 0x80,
+            );
             registers.set_flag(StatusFlag::Z, registers.a == 0);
             registers.set_flag(StatusFlag::N, registers.a >= 0x80);
         }
@@ -1471,13 +1517,31 @@ mod rp2a03 {
         #[test]
         fn adc_test() {
             let mut registers = Registers::new();
-            let mut memory = Memory::new();
 
             registers.a = 0x2;
-
-            memory.memory[0x2] = 0x40;
-            adc(&mut registers, &mut memory, 0x2);
+            adc(&mut registers, 0x40);
             assert_eq!(registers.a, 0x42);
+
+            registers.a = 0x2;
+            adc(&mut registers, 0xFF);
+            assert_eq!(registers.a, 0x1);
+
+            registers.a = 0x2;
+            registers.set_flag(StatusFlag::C, true);
+            adc(&mut registers, 0x40);
+            assert_eq!(registers.a, 0x43);
+
+            registers.a = 0x7F;
+            registers.status = 0x25;
+            adc(&mut registers, 0x7F);
+            assert_eq!(registers.a, 0xFF);
+            assert_eq!(registers.status, 0xE4);
+
+            registers.a = 0x01;
+            registers.status = 0x6D;
+            adc(&mut registers, 0x69);
+            assert_eq!(registers.a, 0x6B);
+            assert_eq!(registers.status, 0x2C);
         }
 
         pub fn sty(registers: &mut Registers, memory: &mut Memory, addr: u16) {
@@ -1726,8 +1790,7 @@ mod rp2a03 {
                     let addr = address_from_bytes(low_byte, high_byte);
                     let low_byte = *memory.get(addr as usize).unwrap();
                     let high_byte = *memory.get((addr + 1) as usize).unwrap();
-                    let addr =
-                        address_from_bytes(low_byte, high_byte) + registers.y as u16;
+                    let addr = address_from_bytes(low_byte, high_byte) + registers.y as u16;
                     Some(*memory.get(addr as usize).unwrap() as u16)
                 }
             };
@@ -1781,8 +1844,8 @@ mod rp2a03 {
             assert_eq!(res, Some(0xD010));
 
             // ZERO PAGE
-            memory.memory[0x0] = 43;
-            let res = apply_addressing(&memory, &registers, AddressingMode::ZeroPage, 0x0, 0x0);
+            memory.memory[0x4] = 43;
+            let res = apply_addressing(&memory, &registers, AddressingMode::ZeroPage, 0x4, 0x0);
             assert_eq!(res, Some(43));
 
             // Relative
@@ -1879,6 +1942,11 @@ mod rp2a03 {
     }
 }
 
+use std::{
+    fmt::write,
+    fs::File,
+    io::{BufRead, BufReader, Write},
+};
 
 use rp2a03::{instructions::*, Registers, *};
 
@@ -2024,6 +2092,66 @@ mod nes_rom {
     }
 }
 
+fn print_nestest_log(
+    instruction: Instructions,
+    registers: &Registers,
+    memory: &Memory,
+    num_operands: u16,
+    addr: u16,
+    ops: (u8, u8),
+) {
+    // P : Processor status
+    // A : Accumulator
+    // X : register X
+    //
+    print!(
+        "{:04X}  {:02X} ",
+        registers.pc, memory.memory[registers.pc as usize]
+    );
+    if num_operands > 0 {
+        print!("{:02X} ", ops.0);
+    } else {
+        print!("   ");
+    }
+    if num_operands >= 2 {
+        print!("{:02X} ", ops.1);
+    } else {
+        print!("   ");
+    }
+    print!("{:4?} ", instruction);
+
+    match num_operands {
+        1 => match instruction {
+            Instructions::BCC
+            | Instructions::BCS
+            | Instructions::BNE
+            | Instructions::BPL
+            | Instructions::BEQ => {
+                print!("{:04X} ", registers.pc + addr + 2)
+            }
+            _ => print!("{:04X} ", addr),
+        },
+        2 => match instruction {
+            Instructions::BCC
+            | Instructions::BCS
+            | Instructions::BNE
+            | Instructions::BPL
+            | Instructions::BEQ => {
+                print!("{:04X} ", registers.pc + addr)
+            }
+            _ => print!("{:04X} ", addr),
+        },
+        _ => print!("     "),
+    }
+
+    print!(
+        "A:{:2X} X:{:2X} Y:{:2X} P:{:2X} SP:{:2X} PPU: 0, 00 CYC:0",
+        registers.a, registers.x, registers.y, registers.status, memory.stack_pointer
+    );
+
+    println!();
+}
+
 fn main() {
     println!("Nessy 🐉!");
 
@@ -2049,6 +2177,8 @@ fn main() {
     //     16 * num_prgrom,
     //     num_chrrom
     // );
+
+    let mut nestest_output = File::create("nestest.log").unwrap();
 
     // Load up memory
     nes_rom::mappers::load_rom(&mut memory, rom, nesfile.mapper);
@@ -2082,6 +2212,10 @@ fn main() {
     memory.memory[0x4000..0x400F].copy_from_slice(&[0x0; 15]);
     memory.memory[0x4010..0x4013].copy_from_slice(&[0x0; 3]);
 
+    let reference = File::open("nestest_reference.log").unwrap();
+    let reference_buffered = BufReader::new(reference);
+    let mut reference_lines = reference_buffered.lines();
+
     loop {
         let byte = memory.memory[registers.pc as usize];
         let (instruction, addressing_mode) = match_instruction(byte);
@@ -2091,28 +2225,44 @@ fn main() {
 
         let (low_byte, high_byte) = ops;
         let bytes = address_from_bytes(low_byte, high_byte);
-        let addr = apply_addressing(&memory, &registers, addressing_mode, low_byte, high_byte)
-            .unwrap_or(0);
+        let addr = apply_addressing(
+            &memory,
+            &registers,
+            addressing_mode.clone(),
+            low_byte,
+            high_byte,
+        )
+        .unwrap_or(0);
 
-        // P : Processor status
-        // A : Accumulator
-        // X : register X
-        //
-        print!(
-            "{:04X}  {:02X} ",
-            registers.pc, memory.memory[registers.pc as usize]
-        );
+        // print_nestest_log(instruction, &registers, &memory, num_operands, addr, ops);
+
+        // PC
+        write!(nestest_output, "{:04X}", registers.pc).unwrap();
+
+        write!(nestest_output, "  ").unwrap();
+
+        write!(
+            nestest_output,
+            "{:02X}",
+            memory.memory[registers.pc as usize]
+        )
+        .unwrap();
+
+        write!(nestest_output, " ").unwrap();
+
         if num_operands > 0 {
-            print!("{:02X} ", ops.0);
+            write!(nestest_output, "{:02X} ", ops.0);
         } else {
-            print!("   ");
+            write!(nestest_output, "   ");
         }
         if num_operands >= 2 {
-            print!("{:02X} ", ops.1);
+            write!(nestest_output, "{:02X} ", ops.1);
         } else {
-            print!("   ");
+            write!(nestest_output, "   ");
         }
-        print!("{:4?} ", instruction);
+
+        write!(nestest_output, " ").unwrap();
+        write!(nestest_output, "{:3?} ", instruction);
 
         match num_operands {
             1 => match instruction {
@@ -2120,30 +2270,99 @@ fn main() {
                 | Instructions::BCS
                 | Instructions::BNE
                 | Instructions::BPL
+                | Instructions::BVS
+                | Instructions::BVC
+                | Instructions::BMI
                 | Instructions::BEQ => {
-                    print!("{:04X} ", registers.pc + addr + 2)
+                    write!(nestest_output, "${:02X}   ", registers.pc + addr + 2)
                 }
-                _ => print!("{:04X} ", addr),
+
+                _ => match addressing_mode {
+                    AddressingMode::Immediate => write!(nestest_output, "#${:02X}    ", addr),
+                    // AddressingMode::Relative => write!(nestest_output, "${:04X}    ", registers.pc + 1 + addr),
+                    AddressingMode::ZeroPage => {
+                        write!(
+                            nestest_output,
+                            "${:02X} = {:02X}",
+                            ops.0, memory.memory[addr as usize]
+                        )
+                    }
+                    _ => write!(nestest_output, "    "),
+                },
             },
             2 => match instruction {
                 Instructions::BCC
                 | Instructions::BCS
                 | Instructions::BNE
                 | Instructions::BPL
-                | Instructions::BEQ => {
-                    print!("{:04X} ", registers.pc + addr)
-                }
-                _ => print!("{:04X} ", addr),
+                | Instructions::BVS
+                | Instructions::BVC
+                | Instructions::BMI
+                | Instructions::BEQ => write!(nestest_output, "${:04X}    ", registers.pc + addr),
+                _ => write!(nestest_output, "${:04X}   ", addr),
             },
-            _ => print!("     "),
-        }
+            _ => match addressing_mode {
+                AddressingMode::Immediate => write!(nestest_output, "#${:04X}    ", addr),
+                AddressingMode::ZeroPage => write!(
+                    nestest_output,
+                    "${:02X} = {:02}",
+                    ops.0, memory.memory[addr as usize]
+                ),
+                _ => write!(nestest_output, "        "),
+            },
+        };
 
-        print!(
-            "A:{:2X} X:{:2X} Y:{:2X} P:{:2X} SP:{:2X} PPU: SOMETHING, SOMETHING SOMETHING",
+        write!(nestest_output, "                    ");
+
+        write!(
+            nestest_output,
+            "A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X} PPU:  0, 00 CYC:0",
             registers.a, registers.x, registers.y, registers.status, memory.stack_pointer
         );
 
+        writeln!(nestest_output);
+
+        let output = File::open("nestest.log").unwrap();
+        let output_buffered = BufReader::new(output);
+
+        let ref_line = reference_lines.next().unwrap();
+
+        let output_line = output_buffered.lines().last().unwrap();
+        let ref_columns_1 = ref_line.unwrap();
+        let ref_columns = ref_columns_1
+            .split(' ')
+            // .filter(|&thing| !thing.is_empty())
+            .collect::<Vec<&str>>();
+        let output_columns = output_line.unwrap();
+        let output_columns = output_columns
+            .split(' ')
+            // .filter(|&thing| !thing.is_empty())
+            .collect::<Vec<&str>>();
+
+        let mut matched = true;
+
+        for ((index, &ref_col), output_col) in
+            ref_columns.iter().enumerate().zip(output_columns.clone())
+        {
+            // if index == 0 {
+            //     println!("\u{001b}[37m{:?}", output_columns);
+            //     println!("\u{001b}[37m{:?}", ref_columns);
+            // }
+            if ref_col == output_col {
+                print!("\u{001b}[32m")
+            } else {
+                // print!("({} {})", ref_col, output_col);
+                print!("\u{001b}[31m");
+                matched = false;
+            }
+
+            print!("{} ", output_col);
+        }
         println!();
+        if !matched {
+            println!("\u{001b}[37m{} ", ref_columns_1);
+            // break;
+        }
 
         registers.pc += 1; // READ instruction
 
@@ -2182,7 +2401,7 @@ fn main() {
                 registers.pc += num_operands;
             }
             Instructions::AND => {
-                and(&mut registers, memory.memory[addr as usize]);
+                and(&mut registers, addr as u8);
                 registers.pc += num_operands;
             }
             Instructions::BEQ => {
@@ -2191,7 +2410,7 @@ fn main() {
                 }
             }
             Instructions::CPX => {
-                cpx(&mut registers, &mut memory, addr);
+                cpx(&mut registers, addr);
                 registers.pc += num_operands;
             }
             Instructions::DEY => {
@@ -2204,7 +2423,7 @@ fn main() {
                 }
             }
             Instructions::PLA => {
-                apl(&mut registers, &mut memory);
+                pla(&mut registers, &mut memory);
                 registers.pc += num_operands;
             }
             Instructions::TAY => {
@@ -2212,7 +2431,7 @@ fn main() {
                 registers.pc += num_operands;
             }
             Instructions::CPY => {
-                cpy(&mut registers, &mut memory, addr);
+                cpy(&mut registers, addr);
                 registers.pc += num_operands;
             }
             Instructions::BNE => {
@@ -2286,7 +2505,7 @@ fn main() {
                 registers.pc += num_operands;
             }
             Instructions::SBC => {
-                sbc(&mut registers, &mut memory, addr);
+                sbc(&mut registers, addr);
                 registers.pc += num_operands;
             }
             Instructions::SED => {
@@ -2294,7 +2513,7 @@ fn main() {
                 registers.pc += num_operands;
             }
             Instructions::CMP => {
-                cmp(&mut registers, &mut memory, addr);
+                cmp(&mut registers, addr);
                 registers.pc += num_operands;
             }
             Instructions::PHA => {
@@ -2319,11 +2538,11 @@ fn main() {
                 registers.pc += num_operands;
             }
             Instructions::EOR => {
-                eor(&mut registers, &mut memory, addr);
+                eor(&mut registers, addr);
                 registers.pc += num_operands;
             }
             Instructions::ADC => {
-                adc(&mut registers, &mut memory, addr);
+                adc(&mut registers, addr);
                 registers.pc += num_operands;
             }
             Instructions::STY => {
@@ -2351,10 +2570,69 @@ fn main() {
                 registers.pc += num_operands;
             }
             Instructions::TSX => {
-                panic!("TOTO");
                 tsx(&mut registers, &mut memory);
                 registers.pc += num_operands;
             }
+
+            Instructions::Unknwon => {
+                eprintln!(
+                    "Unknown opcode {:#x}",
+                    memory.memory[(registers.pc - 1) as usize]
+                );
+                break;
+            }
         }
     }
+
+    // let reference = File::open("nestest_reference.log").unwrap();
+    // let reference_buffered = BufReader::new(reference);
+
+    // let output = File::open("nestest.log").unwrap();
+    // let output_buffered = BufReader::new(output);
+
+    // for (count, (ref_line, output_line)) in reference_buffered
+    //     .lines()
+    //     .zip(output_buffered.lines())
+    //     .enumerate()
+    // {
+    //     let ref_columns_1 = ref_line.unwrap();
+    //     let ref_columns = ref_columns_1
+    //         .split(' ')
+    //         // .filter(|&thing| !thing.is_empty())
+    //         .collect::<Vec<&str>>();
+    //     let output_columns = output_line.unwrap();
+    //     let output_columns = output_columns
+    //         .split(' ')
+    //         // .filter(|&thing| !thing.is_empty())
+    //         .collect::<Vec<&str>>();
+
+    //     let mut matched = true;
+
+    //     for ((index, &ref_col), output_col) in
+    //         ref_columns.iter().enumerate().zip(output_columns.clone())
+    //     {
+    //         // if index == 0 {
+    //         //     println!("\u{001b}[37m{:?}", output_columns);
+    //         //     println!("\u{001b}[37m{:?}", ref_columns);
+    //         // }
+    //         if ref_col == output_col {
+    //             print!("\u{001b}[32m")
+    //         } else {
+    //             // print!("({} {})", ref_col, output_col);
+    //             print!("\u{001b}[31m");
+    //             matched = false;
+    //         }
+
+    //         print!("{} ", output_col);
+    //     }
+    //     println!();
+    //     if !matched {
+    //         println!("\u{001b}[37m{} ", ref_columns_1);
+    //         // break;
+    //     }
+
+    //     // if count == 35 {
+    //     //     break;
+    //     // }
+    // }
 }

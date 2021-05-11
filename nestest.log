@@ -1,0 +1,581 @@
+C000  4C F5 C5  JMP $C5F5                       A:00 X:00 Y:00 P:24 SP:FD PPU:  0, 00 CYC:0
+C5F5  A2 00     LDX #$00                        A:00 X:00 Y:00 P:24 SP:FD PPU:  0, 00 CYC:0
+C5F7  86 00     STX $00 = 00                    A:00 X:00 Y:00 P:26 SP:FD PPU:  0, 00 CYC:0
+C5F9  86 10     STX $10 = 00                    A:00 X:00 Y:00 P:26 SP:FD PPU:  0, 00 CYC:0
+C5FB  86 11     STX $11 = 00                    A:00 X:00 Y:00 P:26 SP:FD PPU:  0, 00 CYC:0
+C5FD  20 2D C7  JSR $C72D                       A:00 X:00 Y:00 P:26 SP:FD PPU:  0, 00 CYC:0
+C72D  EA        NOP                             A:00 X:00 Y:00 P:26 SP:FB PPU:  0, 00 CYC:0
+C72E  38        SEC                             A:00 X:00 Y:00 P:26 SP:FB PPU:  0, 00 CYC:0
+C72F  B0 04     BCS $C735                       A:00 X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+C735  EA        NOP                             A:00 X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+C736  18        CLC                             A:00 X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+C737  B0 03     BCS $C73C                       A:00 X:00 Y:00 P:26 SP:FB PPU:  0, 00 CYC:0
+C739  4C 40 C7  JMP $C740                       A:00 X:00 Y:00 P:26 SP:FB PPU:  0, 00 CYC:0
+C740  EA        NOP                             A:00 X:00 Y:00 P:26 SP:FB PPU:  0, 00 CYC:0
+C741  38        SEC                             A:00 X:00 Y:00 P:26 SP:FB PPU:  0, 00 CYC:0
+C742  90 03     BCC $C747                       A:00 X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+C744  4C 4B C7  JMP $C74B                       A:00 X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+C74B  EA        NOP                             A:00 X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+C74C  18        CLC                             A:00 X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+C74D  90 04     BCC $C753                       A:00 X:00 Y:00 P:26 SP:FB PPU:  0, 00 CYC:0
+C753  EA        NOP                             A:00 X:00 Y:00 P:26 SP:FB PPU:  0, 00 CYC:0
+C754  A9 00     LDA #$00                        A:00 X:00 Y:00 P:26 SP:FB PPU:  0, 00 CYC:0
+C756  F0 04     BEQ $C75C                       A:00 X:00 Y:00 P:26 SP:FB PPU:  0, 00 CYC:0
+C75C  EA        NOP                             A:00 X:00 Y:00 P:26 SP:FB PPU:  0, 00 CYC:0
+C75D  A9 40     LDA #$40                        A:00 X:00 Y:00 P:26 SP:FB PPU:  0, 00 CYC:0
+C75F  F0 03     BEQ $C764                       A:40 X:00 Y:00 P:24 SP:FB PPU:  0, 00 CYC:0
+C761  4C 68 C7  JMP $C768                       A:40 X:00 Y:00 P:24 SP:FB PPU:  0, 00 CYC:0
+C768  EA        NOP                             A:40 X:00 Y:00 P:24 SP:FB PPU:  0, 00 CYC:0
+C769  A9 40     LDA #$40                        A:40 X:00 Y:00 P:24 SP:FB PPU:  0, 00 CYC:0
+C76B  D0 04     BNE $C771                       A:40 X:00 Y:00 P:24 SP:FB PPU:  0, 00 CYC:0
+C771  EA        NOP                             A:40 X:00 Y:00 P:24 SP:FB PPU:  0, 00 CYC:0
+C772  A9 00     LDA #$00                        A:40 X:00 Y:00 P:24 SP:FB PPU:  0, 00 CYC:0
+C774  D0 03     BNE $C779                       A:00 X:00 Y:00 P:26 SP:FB PPU:  0, 00 CYC:0
+C776  4C 7D C7  JMP $C77D                       A:00 X:00 Y:00 P:26 SP:FB PPU:  0, 00 CYC:0
+C77D  EA        NOP                             A:00 X:00 Y:00 P:26 SP:FB PPU:  0, 00 CYC:0
+C77E  A9 FF     LDA #$FF                        A:00 X:00 Y:00 P:26 SP:FB PPU:  0, 00 CYC:0
+C780  85 01     STA $01 = 00                    A:FF X:00 Y:00 P:A4 SP:FB PPU:  0, 00 CYC:0
+C782  24 01     BIT $01 = FF                    A:FF X:00 Y:00 P:A4 SP:FB PPU:  0, 00 CYC:0
+C784  70 04     BVS $C78A                       A:FF X:00 Y:00 P:E4 SP:FB PPU:  0, 00 CYC:0
+C78A  EA        NOP                             A:FF X:00 Y:00 P:E4 SP:FB PPU:  0, 00 CYC:0
+C78B  24 01     BIT $01 = FF                    A:FF X:00 Y:00 P:E4 SP:FB PPU:  0, 00 CYC:0
+C78D  50 03     BVC $C792                       A:FF X:00 Y:00 P:E4 SP:FB PPU:  0, 00 CYC:0
+C78F  4C 96 C7  JMP $C796                       A:FF X:00 Y:00 P:E4 SP:FB PPU:  0, 00 CYC:0
+C796  EA        NOP                             A:FF X:00 Y:00 P:E4 SP:FB PPU:  0, 00 CYC:0
+C797  A9 00     LDA #$00                        A:FF X:00 Y:00 P:E4 SP:FB PPU:  0, 00 CYC:0
+C799  85 01     STA $01 = FF                    A:00 X:00 Y:00 P:66 SP:FB PPU:  0, 00 CYC:0
+C79B  24 01     BIT $01 = 00                    A:00 X:00 Y:00 P:66 SP:FB PPU:  0, 00 CYC:0
+C79D  50 04     BVC $C7A3                       A:00 X:00 Y:00 P:26 SP:FB PPU:  0, 00 CYC:0
+C7A3  EA        NOP                             A:00 X:00 Y:00 P:26 SP:FB PPU:  0, 00 CYC:0
+C7A4  24 01     BIT $01 = 00                    A:00 X:00 Y:00 P:26 SP:FB PPU:  0, 00 CYC:0
+C7A6  70 03     BVS $C7AB                       A:00 X:00 Y:00 P:26 SP:FB PPU:  0, 00 CYC:0
+C7A8  4C AF C7  JMP $C7AF                       A:00 X:00 Y:00 P:26 SP:FB PPU:  0, 00 CYC:0
+C7AF  EA        NOP                             A:00 X:00 Y:00 P:26 SP:FB PPU:  0, 00 CYC:0
+C7B0  A9 00     LDA #$00                        A:00 X:00 Y:00 P:26 SP:FB PPU:  0, 00 CYC:0
+C7B2  10 04     BPL $C7B8                       A:00 X:00 Y:00 P:26 SP:FB PPU:  0, 00 CYC:0
+C7B8  EA        NOP                             A:00 X:00 Y:00 P:26 SP:FB PPU:  0, 00 CYC:0
+C7B9  A9 80     LDA #$80                        A:00 X:00 Y:00 P:26 SP:FB PPU:  0, 00 CYC:0
+C7BB  10 03     BPL $C7C0                       A:80 X:00 Y:00 P:A4 SP:FB PPU:  0, 00 CYC:0
+C7BD  4C D9 C7  JMP $C7D9                       A:80 X:00 Y:00 P:A4 SP:FB PPU:  0, 00 CYC:0
+C7D9  EA        NOP                             A:80 X:00 Y:00 P:A4 SP:FB PPU:  0, 00 CYC:0
+C7DA  60        RTS                             A:80 X:00 Y:00 P:A4 SP:FB PPU:  0, 00 CYC:0
+C600  20 DB C7  JSR $C7DB                       A:80 X:00 Y:00 P:A4 SP:FD PPU:  0, 00 CYC:0
+C7DB  EA        NOP                             A:80 X:00 Y:00 P:A4 SP:FB PPU:  0, 00 CYC:0
+C7DC  A9 FF     LDA #$FF                        A:80 X:00 Y:00 P:A4 SP:FB PPU:  0, 00 CYC:0
+C7DE  85 01     STA $01 = 00                    A:FF X:00 Y:00 P:A4 SP:FB PPU:  0, 00 CYC:0
+C7E0  24 01     BIT $01 = FF                    A:FF X:00 Y:00 P:A4 SP:FB PPU:  0, 00 CYC:0
+C7E2  A9 00     LDA #$00                        A:FF X:00 Y:00 P:E4 SP:FB PPU:  0, 00 CYC:0
+C7E4  38        SEC                             A:00 X:00 Y:00 P:66 SP:FB PPU:  0, 00 CYC:0
+C7E5  78        SEI                             A:00 X:00 Y:00 P:67 SP:FB PPU:  0, 00 CYC:0
+C7E6  F8        SED                             A:00 X:00 Y:00 P:67 SP:FB PPU:  0, 00 CYC:0
+C7E7  08        PHP                             A:00 X:00 Y:00 P:6F SP:FB PPU:  0, 00 CYC:0
+C7E8  68        PLA                             A:00 X:00 Y:00 P:6F SP:FA PPU:  0, 00 CYC:0
+C7E9  29 EF     AND #$EF                        A:7F X:00 Y:00 P:6D SP:FB PPU:  0, 00 CYC:0
+C7EB  C9 6F     CMP #$6F                        A:6F X:00 Y:00 P:6D SP:FB PPU:  0, 00 CYC:0
+C7ED  F0 04     BEQ $C7F3                       A:6F X:00 Y:00 P:6F SP:FB PPU:  0, 00 CYC:0
+C7F3  EA        NOP                             A:6F X:00 Y:00 P:6F SP:FB PPU:  0, 00 CYC:0
+C7F4  A9 40     LDA #$40                        A:6F X:00 Y:00 P:6F SP:FB PPU:  0, 00 CYC:0
+C7F6  85 01     STA $01 = FF                    A:40 X:00 Y:00 P:6D SP:FB PPU:  0, 00 CYC:0
+C7F8  24 01     BIT $01 = 40                    A:40 X:00 Y:00 P:6D SP:FB PPU:  0, 00 CYC:0
+C7FA  D8        CLD                             A:40 X:00 Y:00 P:6D SP:FB PPU:  0, 00 CYC:0
+C7FB  A9 10     LDA #$10                        A:40 X:00 Y:00 P:65 SP:FB PPU:  0, 00 CYC:0
+C7FD  18        CLC                             A:10 X:00 Y:00 P:65 SP:FB PPU:  0, 00 CYC:0
+C7FE  08        PHP                             A:10 X:00 Y:00 P:64 SP:FB PPU:  0, 00 CYC:0
+C7FF  68        PLA                             A:10 X:00 Y:00 P:64 SP:FA PPU:  0, 00 CYC:0
+C800  29 EF     AND #$EF                        A:74 X:00 Y:00 P:64 SP:FB PPU:  0, 00 CYC:0
+C802  C9 64     CMP #$64                        A:64 X:00 Y:00 P:64 SP:FB PPU:  0, 00 CYC:0
+C804  F0 04     BEQ $C80A                       A:64 X:00 Y:00 P:67 SP:FB PPU:  0, 00 CYC:0
+C80A  EA        NOP                             A:64 X:00 Y:00 P:67 SP:FB PPU:  0, 00 CYC:0
+C80B  A9 80     LDA #$80                        A:64 X:00 Y:00 P:67 SP:FB PPU:  0, 00 CYC:0
+C80D  85 01     STA $01 = 40                    A:80 X:00 Y:00 P:E5 SP:FB PPU:  0, 00 CYC:0
+C80F  24 01     BIT $01 = 80                    A:80 X:00 Y:00 P:E5 SP:FB PPU:  0, 00 CYC:0
+C811  F8        SED                             A:80 X:00 Y:00 P:A5 SP:FB PPU:  0, 00 CYC:0
+C812  A9 00     LDA #$00                        A:80 X:00 Y:00 P:AD SP:FB PPU:  0, 00 CYC:0
+C814  38        SEC                             A:00 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C815  08        PHP                             A:00 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C816  68        PLA                             A:00 X:00 Y:00 P:2F SP:FA PPU:  0, 00 CYC:0
+C817  29 EF     AND #$EF                        A:3F X:00 Y:00 P:2D SP:FB PPU:  0, 00 CYC:0
+C819  C9 2F     CMP #$2F                        A:2F X:00 Y:00 P:2D SP:FB PPU:  0, 00 CYC:0
+C81B  F0 04     BEQ $C821                       A:2F X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C821  EA        NOP                             A:2F X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C822  A9 FF     LDA #$FF                        A:2F X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C824  48        PHA                             A:FF X:00 Y:00 P:AD SP:FB PPU:  0, 00 CYC:0
+C825  28        PLP                             A:FF X:00 Y:00 P:AD SP:FA PPU:  0, 00 CYC:0
+C826  D0 09     BNE $C831                       A:FF X:00 Y:00 P:EF SP:FB PPU:  0, 00 CYC:0
+C828  10 07     BPL $C831                       A:FF X:00 Y:00 P:EF SP:FB PPU:  0, 00 CYC:0
+C82A  50 05     BVC $C831                       A:FF X:00 Y:00 P:EF SP:FB PPU:  0, 00 CYC:0
+C82C  90 03     BCC $C831                       A:FF X:00 Y:00 P:EF SP:FB PPU:  0, 00 CYC:0
+C82E  4C 35 C8  JMP $C835                       A:FF X:00 Y:00 P:EF SP:FB PPU:  0, 00 CYC:0
+C835  EA        NOP                             A:FF X:00 Y:00 P:EF SP:FB PPU:  0, 00 CYC:0
+C836  A9 04     LDA #$04                        A:FF X:00 Y:00 P:EF SP:FB PPU:  0, 00 CYC:0
+C838  48        PHA                             A:04 X:00 Y:00 P:6D SP:FB PPU:  0, 00 CYC:0
+C839  28        PLP                             A:04 X:00 Y:00 P:6D SP:FA PPU:  0, 00 CYC:0
+C83A  F0 09     BEQ $C845                       A:04 X:00 Y:00 P:24 SP:FB PPU:  0, 00 CYC:0
+C83C  30 07     BMI $C845                       A:04 X:00 Y:00 P:24 SP:FB PPU:  0, 00 CYC:0
+C83E  70 05     BVS $C845                       A:04 X:00 Y:00 P:24 SP:FB PPU:  0, 00 CYC:0
+C840  B0 03     BCS $C845                       A:04 X:00 Y:00 P:24 SP:FB PPU:  0, 00 CYC:0
+C842  4C 49 C8  JMP $C849                       A:04 X:00 Y:00 P:24 SP:FB PPU:  0, 00 CYC:0
+C849  EA        NOP                             A:04 X:00 Y:00 P:24 SP:FB PPU:  0, 00 CYC:0
+C84A  F8        SED                             A:04 X:00 Y:00 P:24 SP:FB PPU:  0, 00 CYC:0
+C84B  A9 FF     LDA #$FF                        A:04 X:00 Y:00 P:2C SP:FB PPU:  0, 00 CYC:0
+C84D  85 01     STA $01 = 80                    A:FF X:00 Y:00 P:AC SP:FB PPU:  0, 00 CYC:0
+C84F  24 01     BIT $01 = FF                    A:FF X:00 Y:00 P:AC SP:FB PPU:  0, 00 CYC:0
+C851  18        CLC                             A:FF X:00 Y:00 P:EC SP:FB PPU:  0, 00 CYC:0
+C852  A9 00     LDA #$00                        A:FF X:00 Y:00 P:EC SP:FB PPU:  0, 00 CYC:0
+C854  48        PHA                             A:00 X:00 Y:00 P:6E SP:FB PPU:  0, 00 CYC:0
+C855  A9 FF     LDA #$FF                        A:00 X:00 Y:00 P:6E SP:FA PPU:  0, 00 CYC:0
+C857  68        PLA                             A:FF X:00 Y:00 P:EC SP:FA PPU:  0, 00 CYC:0
+C858  D0 09     BNE $C863                       A:00 X:00 Y:00 P:6E SP:FB PPU:  0, 00 CYC:0
+C85A  30 07     BMI $C863                       A:00 X:00 Y:00 P:6E SP:FB PPU:  0, 00 CYC:0
+C85C  50 05     BVC $C863                       A:00 X:00 Y:00 P:6E SP:FB PPU:  0, 00 CYC:0
+C85E  B0 03     BCS $C863                       A:00 X:00 Y:00 P:6E SP:FB PPU:  0, 00 CYC:0
+C860  4C 67 C8  JMP $C867                       A:00 X:00 Y:00 P:6E SP:FB PPU:  0, 00 CYC:0
+C867  EA        NOP                             A:00 X:00 Y:00 P:6E SP:FB PPU:  0, 00 CYC:0
+C868  A9 00     LDA #$00                        A:00 X:00 Y:00 P:6E SP:FB PPU:  0, 00 CYC:0
+C86A  85 01     STA $01 = FF                    A:00 X:00 Y:00 P:6E SP:FB PPU:  0, 00 CYC:0
+C86C  24 01     BIT $01 = 00                    A:00 X:00 Y:00 P:6E SP:FB PPU:  0, 00 CYC:0
+C86E  38        SEC                             A:00 X:00 Y:00 P:2E SP:FB PPU:  0, 00 CYC:0
+C86F  A9 FF     LDA #$FF                        A:00 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C871  48        PHA                             A:FF X:00 Y:00 P:AD SP:FB PPU:  0, 00 CYC:0
+C872  A9 00     LDA #$00                        A:FF X:00 Y:00 P:AD SP:FA PPU:  0, 00 CYC:0
+C874  68        PLA                             A:00 X:00 Y:00 P:2F SP:FA PPU:  0, 00 CYC:0
+C875  F0 09     BEQ $C880                       A:FF X:00 Y:00 P:AD SP:FB PPU:  0, 00 CYC:0
+C877  10 07     BPL $C880                       A:FF X:00 Y:00 P:AD SP:FB PPU:  0, 00 CYC:0
+C879  70 05     BVS $C880                       A:FF X:00 Y:00 P:AD SP:FB PPU:  0, 00 CYC:0
+C87B  90 03     BCC $C880                       A:FF X:00 Y:00 P:AD SP:FB PPU:  0, 00 CYC:0
+C87D  4C 84 C8  JMP $C884                       A:FF X:00 Y:00 P:AD SP:FB PPU:  0, 00 CYC:0
+C884  60        RTS                             A:FF X:00 Y:00 P:AD SP:FB PPU:  0, 00 CYC:0
+C603  20 85 C8  JSR $C885                       A:FF X:00 Y:00 P:AD SP:FD PPU:  0, 00 CYC:0
+C885  EA        NOP                             A:FF X:00 Y:00 P:AD SP:FB PPU:  0, 00 CYC:0
+C886  18        CLC                             A:FF X:00 Y:00 P:AD SP:FB PPU:  0, 00 CYC:0
+C887  A9 FF     LDA #$FF                        A:FF X:00 Y:00 P:AC SP:FB PPU:  0, 00 CYC:0
+C889  85 01     STA $01 = 00                    A:FF X:00 Y:00 P:AC SP:FB PPU:  0, 00 CYC:0
+C88B  24 01     BIT $01 = FF                    A:FF X:00 Y:00 P:AC SP:FB PPU:  0, 00 CYC:0
+C88D  A9 55     LDA #$55                        A:FF X:00 Y:00 P:EC SP:FB PPU:  0, 00 CYC:0
+C88F  09 AA     ORA #$AA                        A:55 X:00 Y:00 P:6C SP:FB PPU:  0, 00 CYC:0
+C891  B0 0B     BCS $C89E                       A:FF X:00 Y:00 P:EC SP:FB PPU:  0, 00 CYC:0
+C893  10 09     BPL $C89E                       A:FF X:00 Y:00 P:EC SP:FB PPU:  0, 00 CYC:0
+C895  C9 FF     CMP #$FF                        A:FF X:00 Y:00 P:EC SP:FB PPU:  0, 00 CYC:0
+C897  D0 05     BNE $C89E                       A:FF X:00 Y:00 P:6F SP:FB PPU:  0, 00 CYC:0
+C899  50 03     BVC $C89E                       A:FF X:00 Y:00 P:6F SP:FB PPU:  0, 00 CYC:0
+C89B  4C A2 C8  JMP $C8A2                       A:FF X:00 Y:00 P:6F SP:FB PPU:  0, 00 CYC:0
+C8A2  EA        NOP                             A:FF X:00 Y:00 P:6F SP:FB PPU:  0, 00 CYC:0
+C8A3  38        SEC                             A:FF X:00 Y:00 P:6F SP:FB PPU:  0, 00 CYC:0
+C8A4  B8        CLV                             A:FF X:00 Y:00 P:6F SP:FB PPU:  0, 00 CYC:0
+C8A5  A9 00     LDA #$00                        A:FF X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C8A7  09 00     ORA #$00                        A:00 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C8A9  D0 09     BNE $C8B4                       A:00 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C8AB  70 07     BVS $C8B4                       A:00 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C8AD  90 05     BCC $C8B4                       A:00 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C8AF  30 03     BMI $C8B4                       A:00 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C8B1  4C B8 C8  JMP $C8B8                       A:00 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C8B8  EA        NOP                             A:00 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C8B9  18        CLC                             A:00 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C8BA  24 01     BIT $01 = FF                    A:00 X:00 Y:00 P:2E SP:FB PPU:  0, 00 CYC:0
+C8BC  A9 55     LDA #$55                        A:00 X:00 Y:00 P:EE SP:FB PPU:  0, 00 CYC:0
+C8BE  29 AA     AND #$AA                        A:55 X:00 Y:00 P:6C SP:FB PPU:  0, 00 CYC:0
+C8C0  D0 09     BNE $C8CB                       A:00 X:00 Y:00 P:6E SP:FB PPU:  0, 00 CYC:0
+C8C2  50 07     BVC $C8CB                       A:00 X:00 Y:00 P:6E SP:FB PPU:  0, 00 CYC:0
+C8C4  B0 05     BCS $C8CB                       A:00 X:00 Y:00 P:6E SP:FB PPU:  0, 00 CYC:0
+C8C6  30 03     BMI $C8CB                       A:00 X:00 Y:00 P:6E SP:FB PPU:  0, 00 CYC:0
+C8C8  4C CF C8  JMP $C8CF                       A:00 X:00 Y:00 P:6E SP:FB PPU:  0, 00 CYC:0
+C8CF  EA        NOP                             A:00 X:00 Y:00 P:6E SP:FB PPU:  0, 00 CYC:0
+C8D0  38        SEC                             A:00 X:00 Y:00 P:6E SP:FB PPU:  0, 00 CYC:0
+C8D1  B8        CLV                             A:00 X:00 Y:00 P:6F SP:FB PPU:  0, 00 CYC:0
+C8D2  A9 F8     LDA #$F8                        A:00 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C8D4  29 EF     AND #$EF                        A:F8 X:00 Y:00 P:AD SP:FB PPU:  0, 00 CYC:0
+C8D6  90 0B     BCC $C8E3                       A:E8 X:00 Y:00 P:AD SP:FB PPU:  0, 00 CYC:0
+C8D8  10 09     BPL $C8E3                       A:E8 X:00 Y:00 P:AD SP:FB PPU:  0, 00 CYC:0
+C8DA  C9 E8     CMP #$E8                        A:E8 X:00 Y:00 P:AD SP:FB PPU:  0, 00 CYC:0
+C8DC  D0 05     BNE $C8E3                       A:E8 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C8DE  70 03     BVS $C8E3                       A:E8 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C8E0  4C E7 C8  JMP $C8E7                       A:E8 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C8E7  EA        NOP                             A:E8 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C8E8  18        CLC                             A:E8 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C8E9  24 01     BIT $01 = FF                    A:E8 X:00 Y:00 P:2E SP:FB PPU:  0, 00 CYC:0
+C8EB  A9 5F     LDA #$5F                        A:E8 X:00 Y:00 P:EC SP:FB PPU:  0, 00 CYC:0
+C8ED  49 AA     EOR #$AA                        A:5F X:00 Y:00 P:6C SP:FB PPU:  0, 00 CYC:0
+C8EF  B0 0B     BCS $C8FC                       A:F5 X:00 Y:00 P:EC SP:FB PPU:  0, 00 CYC:0
+C8F1  10 09     BPL $C8FC                       A:F5 X:00 Y:00 P:EC SP:FB PPU:  0, 00 CYC:0
+C8F3  C9 F5     CMP #$F5                        A:F5 X:00 Y:00 P:EC SP:FB PPU:  0, 00 CYC:0
+C8F5  D0 05     BNE $C8FC                       A:F5 X:00 Y:00 P:6F SP:FB PPU:  0, 00 CYC:0
+C8F7  50 03     BVC $C8FC                       A:F5 X:00 Y:00 P:6F SP:FB PPU:  0, 00 CYC:0
+C8F9  4C 00 C9  JMP $C900                       A:F5 X:00 Y:00 P:6F SP:FB PPU:  0, 00 CYC:0
+C900  EA        NOP                             A:F5 X:00 Y:00 P:6F SP:FB PPU:  0, 00 CYC:0
+C901  38        SEC                             A:F5 X:00 Y:00 P:6F SP:FB PPU:  0, 00 CYC:0
+C902  B8        CLV                             A:F5 X:00 Y:00 P:6F SP:FB PPU:  0, 00 CYC:0
+C903  A9 70     LDA #$70                        A:F5 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C905  49 70     EOR #$70                        A:70 X:00 Y:00 P:2D SP:FB PPU:  0, 00 CYC:0
+C907  D0 09     BNE $C912                       A:00 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C909  70 07     BVS $C912                       A:00 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C90B  90 05     BCC $C912                       A:00 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C90D  30 03     BMI $C912                       A:00 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C90F  4C 16 C9  JMP $C916                       A:00 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C916  EA        NOP                             A:00 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C917  18        CLC                             A:00 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C918  24 01     BIT $01 = FF                    A:00 X:00 Y:00 P:2E SP:FB PPU:  0, 00 CYC:0
+C91A  A9 00     LDA #$00                        A:00 X:00 Y:00 P:EE SP:FB PPU:  0, 00 CYC:0
+C91C  69 69     ADC #$69                        A:00 X:00 Y:00 P:6E SP:FB PPU:  0, 00 CYC:0
+C91E  30 0B     BMI $C92B                       A:69 X:00 Y:00 P:2C SP:FB PPU:  0, 00 CYC:0
+C920  B0 09     BCS $C92B                       A:69 X:00 Y:00 P:2C SP:FB PPU:  0, 00 CYC:0
+C922  C9 69     CMP #$69                        A:69 X:00 Y:00 P:2C SP:FB PPU:  0, 00 CYC:0
+C924  D0 05     BNE $C92B                       A:69 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C926  70 03     BVS $C92B                       A:69 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C928  4C 2F C9  JMP $C92F                       A:69 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C92F  EA        NOP                             A:69 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C930  38        SEC                             A:69 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C931  F8        SED                             A:69 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C932  24 01     BIT $01 = FF                    A:69 X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C934  A9 01     LDA #$01                        A:69 X:00 Y:00 P:ED SP:FB PPU:  0, 00 CYC:0
+C936  69 69     ADC #$69                        A:01 X:00 Y:00 P:6D SP:FB PPU:  0, 00 CYC:0
+C938  30 0B     BMI $C945                       A:6B X:00 Y:00 P:2C SP:FB PPU:  0, 00 CYC:0
+C93A  B0 09     BCS $C945                       A:6B X:00 Y:00 P:2C SP:FB PPU:  0, 00 CYC:0
+C93C  C9 6B     CMP #$6B                        A:6B X:00 Y:00 P:2C SP:FB PPU:  0, 00 CYC:0
+C93E  D0 05     BNE $C945                       A:6B X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C940  70 03     BVS $C945                       A:6B X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C942  4C 49 C9  JMP $C949                       A:6B X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C949  EA        NOP                             A:6B X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C94A  D8        CLD                             A:6B X:00 Y:00 P:2F SP:FB PPU:  0, 00 CYC:0
+C94B  38        SEC                             A:6B X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+C94C  B8        CLV                             A:6B X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+C94D  A9 7F     LDA #$7F                        A:6B X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+C94F  69 7F     ADC #$7F                        A:7F X:00 Y:00 P:25 SP:FB PPU:  0, 00 CYC:0
+C951  10 0B     BPL $C95E                       A:FF X:00 Y:00 P:E4 SP:FB PPU:  0, 00 CYC:0
+C953  B0 09     BCS $C95E                       A:FF X:00 Y:00 P:E4 SP:FB PPU:  0, 00 CYC:0
+C955  C9 FF     CMP #$FF                        A:FF X:00 Y:00 P:E4 SP:FB PPU:  0, 00 CYC:0
+C957  D0 05     BNE $C95E                       A:FF X:00 Y:00 P:67 SP:FB PPU:  0, 00 CYC:0
+C959  50 03     BVC $C95E                       A:FF X:00 Y:00 P:67 SP:FB PPU:  0, 00 CYC:0
+C95B  4C 62 C9  JMP $C962                       A:FF X:00 Y:00 P:67 SP:FB PPU:  0, 00 CYC:0
+C962  EA        NOP                             A:FF X:00 Y:00 P:67 SP:FB PPU:  0, 00 CYC:0
+C963  18        CLC                             A:FF X:00 Y:00 P:67 SP:FB PPU:  0, 00 CYC:0
+C964  24 01     BIT $01 = FF                    A:FF X:00 Y:00 P:66 SP:FB PPU:  0, 00 CYC:0
+C966  A9 7F     LDA #$7F                        A:FF X:00 Y:00 P:E4 SP:FB PPU:  0, 00 CYC:0
+C968  69 80     ADC #$80                        A:7F X:00 Y:00 P:64 SP:FB PPU:  0, 00 CYC:0
+C96A  10 0B     BPL $C977                       A:FF X:00 Y:00 P:A4 SP:FB PPU:  0, 00 CYC:0
+C96C  B0 09     BCS $C977                       A:FF X:00 Y:00 P:A4 SP:FB PPU:  0, 00 CYC:0
+C96E  C9 FF     CMP #$FF                        A:FF X:00 Y:00 P:A4 SP:FB PPU:  0, 00 CYC:0
+C970  D0 05     BNE $C977                       A:FF X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+C972  70 03     BVS $C977                       A:FF X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+C974  4C 7B C9  JMP $C97B                       A:FF X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+C97B  EA        NOP                             A:FF X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+C97C  38        SEC                             A:FF X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+C97D  B8        CLV                             A:FF X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+C97E  A9 7F     LDA #$7F                        A:FF X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+C980  69 80     ADC #$80                        A:7F X:00 Y:00 P:25 SP:FB PPU:  0, 00 CYC:0
+C982  D0 09     BNE $C98D                       A:00 X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+C984  30 07     BMI $C98D                       A:00 X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+C986  70 05     BVS $C98D                       A:00 X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+C988  90 03     BCC $C98D                       A:00 X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+C98A  4C 91 C9  JMP $C991                       A:00 X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+C991  EA        NOP                             A:00 X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+C992  38        SEC                             A:00 X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+C993  B8        CLV                             A:00 X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+C994  A9 9F     LDA #$9F                        A:00 X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+C996  F0 09     BEQ $C9A1                       A:9F X:00 Y:00 P:A5 SP:FB PPU:  0, 00 CYC:0
+C998  10 07     BPL $C9A1                       A:9F X:00 Y:00 P:A5 SP:FB PPU:  0, 00 CYC:0
+C99A  70 05     BVS $C9A1                       A:9F X:00 Y:00 P:A5 SP:FB PPU:  0, 00 CYC:0
+C99C  90 03     BCC $C9A1                       A:9F X:00 Y:00 P:A5 SP:FB PPU:  0, 00 CYC:0
+C99E  4C A5 C9  JMP $C9A5                       A:9F X:00 Y:00 P:A5 SP:FB PPU:  0, 00 CYC:0
+C9A5  EA        NOP                             A:9F X:00 Y:00 P:A5 SP:FB PPU:  0, 00 CYC:0
+C9A6  18        CLC                             A:9F X:00 Y:00 P:A5 SP:FB PPU:  0, 00 CYC:0
+C9A7  24 01     BIT $01 = FF                    A:9F X:00 Y:00 P:A4 SP:FB PPU:  0, 00 CYC:0
+C9A9  A9 00     LDA #$00                        A:9F X:00 Y:00 P:E4 SP:FB PPU:  0, 00 CYC:0
+C9AB  D0 09     BNE $C9B6                       A:00 X:00 Y:00 P:66 SP:FB PPU:  0, 00 CYC:0
+C9AD  30 07     BMI $C9B6                       A:00 X:00 Y:00 P:66 SP:FB PPU:  0, 00 CYC:0
+C9AF  50 05     BVC $C9B6                       A:00 X:00 Y:00 P:66 SP:FB PPU:  0, 00 CYC:0
+C9B1  B0 03     BCS $C9B6                       A:00 X:00 Y:00 P:66 SP:FB PPU:  0, 00 CYC:0
+C9B3  4C BA C9  JMP $C9BA                       A:00 X:00 Y:00 P:66 SP:FB PPU:  0, 00 CYC:0
+C9BA  EA        NOP                             A:00 X:00 Y:00 P:66 SP:FB PPU:  0, 00 CYC:0
+C9BB  24 01     BIT $01 = FF                    A:00 X:00 Y:00 P:66 SP:FB PPU:  0, 00 CYC:0
+C9BD  A9 40     LDA #$40                        A:00 X:00 Y:00 P:E6 SP:FB PPU:  0, 00 CYC:0
+C9BF  C9 40     CMP #$40                        A:40 X:00 Y:00 P:64 SP:FB PPU:  0, 00 CYC:0
+C9C1  30 09     BMI $C9CC                       A:40 X:00 Y:00 P:67 SP:FB PPU:  0, 00 CYC:0
+C9C3  90 07     BCC $C9CC                       A:40 X:00 Y:00 P:67 SP:FB PPU:  0, 00 CYC:0
+C9C5  D0 05     BNE $C9CC                       A:40 X:00 Y:00 P:67 SP:FB PPU:  0, 00 CYC:0
+C9C7  50 03     BVC $C9CC                       A:40 X:00 Y:00 P:67 SP:FB PPU:  0, 00 CYC:0
+C9C9  4C D0 C9  JMP $C9D0                       A:40 X:00 Y:00 P:67 SP:FB PPU:  0, 00 CYC:0
+C9D0  EA        NOP                             A:40 X:00 Y:00 P:67 SP:FB PPU:  0, 00 CYC:0
+C9D1  B8        CLV                             A:40 X:00 Y:00 P:67 SP:FB PPU:  0, 00 CYC:0
+C9D2  C9 3F     CMP #$3F                        A:40 X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+C9D4  F0 09     BEQ $C9DF                       A:40 X:00 Y:00 P:25 SP:FB PPU:  0, 00 CYC:0
+C9D6  30 07     BMI $C9DF                       A:40 X:00 Y:00 P:25 SP:FB PPU:  0, 00 CYC:0
+C9D8  90 05     BCC $C9DF                       A:40 X:00 Y:00 P:25 SP:FB PPU:  0, 00 CYC:0
+C9DA  70 03     BVS $C9DF                       A:40 X:00 Y:00 P:25 SP:FB PPU:  0, 00 CYC:0
+C9DC  4C E3 C9  JMP $C9E3                       A:40 X:00 Y:00 P:25 SP:FB PPU:  0, 00 CYC:0
+C9E3  EA        NOP                             A:40 X:00 Y:00 P:25 SP:FB PPU:  0, 00 CYC:0
+C9E4  C9 41     CMP #$41                        A:40 X:00 Y:00 P:25 SP:FB PPU:  0, 00 CYC:0
+C9E6  F0 07     BEQ $C9EF                       A:40 X:00 Y:00 P:A4 SP:FB PPU:  0, 00 CYC:0
+C9E8  10 05     BPL $C9EF                       A:40 X:00 Y:00 P:A4 SP:FB PPU:  0, 00 CYC:0
+C9EA  10 03     BPL $C9EF                       A:40 X:00 Y:00 P:A4 SP:FB PPU:  0, 00 CYC:0
+C9EC  4C F3 C9  JMP $C9F3                       A:40 X:00 Y:00 P:A4 SP:FB PPU:  0, 00 CYC:0
+C9F3  EA        NOP                             A:40 X:00 Y:00 P:A4 SP:FB PPU:  0, 00 CYC:0
+C9F4  A9 80     LDA #$80                        A:40 X:00 Y:00 P:A4 SP:FB PPU:  0, 00 CYC:0
+C9F6  C9 00     CMP #$00                        A:80 X:00 Y:00 P:A4 SP:FB PPU:  0, 00 CYC:0
+C9F8  F0 07     BEQ $CA01                       A:80 X:00 Y:00 P:A5 SP:FB PPU:  0, 00 CYC:0
+C9FA  10 05     BPL $CA01                       A:80 X:00 Y:00 P:A5 SP:FB PPU:  0, 00 CYC:0
+C9FC  90 03     BCC $CA01                       A:80 X:00 Y:00 P:A5 SP:FB PPU:  0, 00 CYC:0
+C9FE  4C 05 CA  JMP $CA05                       A:80 X:00 Y:00 P:A5 SP:FB PPU:  0, 00 CYC:0
+CA05  EA        NOP                             A:80 X:00 Y:00 P:A5 SP:FB PPU:  0, 00 CYC:0
+CA06  C9 80     CMP #$80                        A:80 X:00 Y:00 P:A5 SP:FB PPU:  0, 00 CYC:0
+CA08  D0 07     BNE $CA11                       A:80 X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+CA0A  30 05     BMI $CA11                       A:80 X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+CA0C  90 03     BCC $CA11                       A:80 X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+CA0E  4C 15 CA  JMP $CA15                       A:80 X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+CA15  EA        NOP                             A:80 X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+CA16  C9 81     CMP #$81                        A:80 X:00 Y:00 P:27 SP:FB PPU:  0, 00 CYC:0
+CA18  B0 07     BCS $CA21                       A:80 X:00 Y:00 P:A4 SP:FB PPU:  0, 00 CYC:0
+CA1A  F0 05     BEQ $CA21                       A:80 X:00 Y:00 P:A4 SP:FB PPU:  0, 00 CYC:0
+CA1C  10 03     BPL $CA21                       A:80 X:00 Y:00 P:A4 SP:FB PPU:  0, 00 CYC:0
+CA1E  4C 25 CA  JMP $CA25                       A:80 X:00 Y:00 P:A4 SP:FB PPU:  0, 00 CYC:0
+CA25  EA        NOP                             A:80 X:00 Y:00 P:A4 SP:FB PPU:  0, 00 CYC:0
+CA26  C9 7F     CMP #$7F                        A:80 X:00 Y:00 P:A4 SP:FB PPU:  0, 00 CYC:0
+CA28  90 07     BCC $CA31                       A:80 X:00 Y:00 P:25 SP:FB PPU:  0, 00 CYC:0
+CA2A  F0 05     BEQ $CA31                       A:80 X:00 Y:00 P:25 SP:FB PPU:  0, 00 CYC:0
+CA2C  30 03     BMI $CA31                       A:80 X:00 Y:00 P:25 SP:FB PPU:  0, 00 CYC:0
+CA2E  4C 35 CA  JMP $CA35                       A:80 X:00 Y:00 P:25 SP:FB PPU:  0, 00 CYC:0
+CA35  EA        NOP                             A:80 X:00 Y:00 P:25 SP:FB PPU:  0, 00 CYC:0
+CA36  24 01     BIT $01 = FF                    A:80 X:00 Y:00 P:25 SP:FB PPU:  0, 00 CYC:0
+CA38  A0 40     LDY #$40                        A:80 X:00 Y:00 P:E5 SP:FB PPU:  0, 00 CYC:0
+CA3A  C0 40     CPY #$40                        A:80 X:00 Y:40 P:65 SP:FB PPU:  0, 00 CYC:0
+CA3C  D0 09     BNE $CA47                       A:80 X:00 Y:40 P:67 SP:FB PPU:  0, 00 CYC:0
+CA3E  30 07     BMI $CA47                       A:80 X:00 Y:40 P:67 SP:FB PPU:  0, 00 CYC:0
+CA40  90 05     BCC $CA47                       A:80 X:00 Y:40 P:67 SP:FB PPU:  0, 00 CYC:0
+CA42  50 03     BVC $CA47                       A:80 X:00 Y:40 P:67 SP:FB PPU:  0, 00 CYC:0
+CA44  4C 4B CA  JMP $CA4B                       A:80 X:00 Y:40 P:67 SP:FB PPU:  0, 00 CYC:0
+CA4B  EA        NOP                             A:80 X:00 Y:40 P:67 SP:FB PPU:  0, 00 CYC:0
+CA4C  B8        CLV                             A:80 X:00 Y:40 P:67 SP:FB PPU:  0, 00 CYC:0
+CA4D  C0 3F     CPY #$3F                        A:80 X:00 Y:40 P:27 SP:FB PPU:  0, 00 CYC:0
+CA4F  F0 09     BEQ $CA5A                       A:80 X:00 Y:40 P:25 SP:FB PPU:  0, 00 CYC:0
+CA51  30 07     BMI $CA5A                       A:80 X:00 Y:40 P:25 SP:FB PPU:  0, 00 CYC:0
+CA53  90 05     BCC $CA5A                       A:80 X:00 Y:40 P:25 SP:FB PPU:  0, 00 CYC:0
+CA55  70 03     BVS $CA5A                       A:80 X:00 Y:40 P:25 SP:FB PPU:  0, 00 CYC:0
+CA57  4C 5E CA  JMP $CA5E                       A:80 X:00 Y:40 P:25 SP:FB PPU:  0, 00 CYC:0
+CA5E  EA        NOP                             A:80 X:00 Y:40 P:25 SP:FB PPU:  0, 00 CYC:0
+CA5F  C0 41     CPY #$41                        A:80 X:00 Y:40 P:25 SP:FB PPU:  0, 00 CYC:0
+CA61  F0 07     BEQ $CA6A                       A:80 X:00 Y:40 P:A4 SP:FB PPU:  0, 00 CYC:0
+CA63  10 05     BPL $CA6A                       A:80 X:00 Y:40 P:A4 SP:FB PPU:  0, 00 CYC:0
+CA65  10 03     BPL $CA6A                       A:80 X:00 Y:40 P:A4 SP:FB PPU:  0, 00 CYC:0
+CA67  4C 6E CA  JMP $CA6E                       A:80 X:00 Y:40 P:A4 SP:FB PPU:  0, 00 CYC:0
+CA6E  EA        NOP                             A:80 X:00 Y:40 P:A4 SP:FB PPU:  0, 00 CYC:0
+CA6F  A0 80     LDY #$80                        A:80 X:00 Y:40 P:A4 SP:FB PPU:  0, 00 CYC:0
+CA71  C0 00     CPY #$00                        A:80 X:00 Y:80 P:A4 SP:FB PPU:  0, 00 CYC:0
+CA73  F0 07     BEQ $CA7C                       A:80 X:00 Y:80 P:A5 SP:FB PPU:  0, 00 CYC:0
+CA75  10 05     BPL $CA7C                       A:80 X:00 Y:80 P:A5 SP:FB PPU:  0, 00 CYC:0
+CA77  90 03     BCC $CA7C                       A:80 X:00 Y:80 P:A5 SP:FB PPU:  0, 00 CYC:0
+CA79  4C 80 CA  JMP $CA80                       A:80 X:00 Y:80 P:A5 SP:FB PPU:  0, 00 CYC:0
+CA80  EA        NOP                             A:80 X:00 Y:80 P:A5 SP:FB PPU:  0, 00 CYC:0
+CA81  C0 80     CPY #$80                        A:80 X:00 Y:80 P:A5 SP:FB PPU:  0, 00 CYC:0
+CA83  D0 07     BNE $CA8C                       A:80 X:00 Y:80 P:27 SP:FB PPU:  0, 00 CYC:0
+CA85  30 05     BMI $CA8C                       A:80 X:00 Y:80 P:27 SP:FB PPU:  0, 00 CYC:0
+CA87  90 03     BCC $CA8C                       A:80 X:00 Y:80 P:27 SP:FB PPU:  0, 00 CYC:0
+CA89  4C 90 CA  JMP $CA90                       A:80 X:00 Y:80 P:27 SP:FB PPU:  0, 00 CYC:0
+CA90  EA        NOP                             A:80 X:00 Y:80 P:27 SP:FB PPU:  0, 00 CYC:0
+CA91  C0 81     CPY #$81                        A:80 X:00 Y:80 P:27 SP:FB PPU:  0, 00 CYC:0
+CA93  B0 07     BCS $CA9C                       A:80 X:00 Y:80 P:A4 SP:FB PPU:  0, 00 CYC:0
+CA95  F0 05     BEQ $CA9C                       A:80 X:00 Y:80 P:A4 SP:FB PPU:  0, 00 CYC:0
+CA97  10 03     BPL $CA9C                       A:80 X:00 Y:80 P:A4 SP:FB PPU:  0, 00 CYC:0
+CA99  4C A0 CA  JMP $CAA0                       A:80 X:00 Y:80 P:A4 SP:FB PPU:  0, 00 CYC:0
+CAA0  EA        NOP                             A:80 X:00 Y:80 P:A4 SP:FB PPU:  0, 00 CYC:0
+CAA1  C0 7F     CPY #$7F                        A:80 X:00 Y:80 P:A4 SP:FB PPU:  0, 00 CYC:0
+CAA3  90 07     BCC $CAAC                       A:80 X:00 Y:80 P:25 SP:FB PPU:  0, 00 CYC:0
+CAA5  F0 05     BEQ $CAAC                       A:80 X:00 Y:80 P:25 SP:FB PPU:  0, 00 CYC:0
+CAA7  30 03     BMI $CAAC                       A:80 X:00 Y:80 P:25 SP:FB PPU:  0, 00 CYC:0
+CAA9  4C B0 CA  JMP $CAB0                       A:80 X:00 Y:80 P:25 SP:FB PPU:  0, 00 CYC:0
+CAB0  EA        NOP                             A:80 X:00 Y:80 P:25 SP:FB PPU:  0, 00 CYC:0
+CAB1  24 01     BIT $01 = FF                    A:80 X:00 Y:80 P:25 SP:FB PPU:  0, 00 CYC:0
+CAB3  A2 40     LDX #$40                        A:80 X:00 Y:80 P:E5 SP:FB PPU:  0, 00 CYC:0
+CAB5  E0 40     CPX #$40                        A:80 X:40 Y:80 P:65 SP:FB PPU:  0, 00 CYC:0
+CAB7  D0 09     BNE $CAC2                       A:80 X:40 Y:80 P:67 SP:FB PPU:  0, 00 CYC:0
+CAB9  30 07     BMI $CAC2                       A:80 X:40 Y:80 P:67 SP:FB PPU:  0, 00 CYC:0
+CABB  90 05     BCC $CAC2                       A:80 X:40 Y:80 P:67 SP:FB PPU:  0, 00 CYC:0
+CABD  50 03     BVC $CAC2                       A:80 X:40 Y:80 P:67 SP:FB PPU:  0, 00 CYC:0
+CABF  4C C6 CA  JMP $CAC6                       A:80 X:40 Y:80 P:67 SP:FB PPU:  0, 00 CYC:0
+CAC6  EA        NOP                             A:80 X:40 Y:80 P:67 SP:FB PPU:  0, 00 CYC:0
+CAC7  B8        CLV                             A:80 X:40 Y:80 P:67 SP:FB PPU:  0, 00 CYC:0
+CAC8  E0 3F     CPX #$3F                        A:80 X:40 Y:80 P:27 SP:FB PPU:  0, 00 CYC:0
+CACA  F0 09     BEQ $CAD5                       A:80 X:40 Y:80 P:25 SP:FB PPU:  0, 00 CYC:0
+CACC  30 07     BMI $CAD5                       A:80 X:40 Y:80 P:25 SP:FB PPU:  0, 00 CYC:0
+CACE  90 05     BCC $CAD5                       A:80 X:40 Y:80 P:25 SP:FB PPU:  0, 00 CYC:0
+CAD0  70 03     BVS $CAD5                       A:80 X:40 Y:80 P:25 SP:FB PPU:  0, 00 CYC:0
+CAD2  4C D9 CA  JMP $CAD9                       A:80 X:40 Y:80 P:25 SP:FB PPU:  0, 00 CYC:0
+CAD9  EA        NOP                             A:80 X:40 Y:80 P:25 SP:FB PPU:  0, 00 CYC:0
+CADA  E0 41     CPX #$41                        A:80 X:40 Y:80 P:25 SP:FB PPU:  0, 00 CYC:0
+CADC  F0 07     BEQ $CAE5                       A:80 X:40 Y:80 P:A4 SP:FB PPU:  0, 00 CYC:0
+CADE  10 05     BPL $CAE5                       A:80 X:40 Y:80 P:A4 SP:FB PPU:  0, 00 CYC:0
+CAE0  10 03     BPL $CAE5                       A:80 X:40 Y:80 P:A4 SP:FB PPU:  0, 00 CYC:0
+CAE2  4C E9 CA  JMP $CAE9                       A:80 X:40 Y:80 P:A4 SP:FB PPU:  0, 00 CYC:0
+CAE9  EA        NOP                             A:80 X:40 Y:80 P:A4 SP:FB PPU:  0, 00 CYC:0
+CAEA  A2 80     LDX #$80                        A:80 X:40 Y:80 P:A4 SP:FB PPU:  0, 00 CYC:0
+CAEC  E0 00     CPX #$00                        A:80 X:80 Y:80 P:A4 SP:FB PPU:  0, 00 CYC:0
+CAEE  F0 07     BEQ $CAF7                       A:80 X:80 Y:80 P:A5 SP:FB PPU:  0, 00 CYC:0
+CAF0  10 05     BPL $CAF7                       A:80 X:80 Y:80 P:A5 SP:FB PPU:  0, 00 CYC:0
+CAF2  90 03     BCC $CAF7                       A:80 X:80 Y:80 P:A5 SP:FB PPU:  0, 00 CYC:0
+CAF4  4C FB CA  JMP $CAFB                       A:80 X:80 Y:80 P:A5 SP:FB PPU:  0, 00 CYC:0
+CAFB  EA        NOP                             A:80 X:80 Y:80 P:A5 SP:FB PPU:  0, 00 CYC:0
+CAFC  E0 80     CPX #$80                        A:80 X:80 Y:80 P:A5 SP:FB PPU:  0, 00 CYC:0
+CAFE  D0 07     BNE $CB07                       A:80 X:80 Y:80 P:27 SP:FB PPU:  0, 00 CYC:0
+CB00  30 05     BMI $CB07                       A:80 X:80 Y:80 P:27 SP:FB PPU:  0, 00 CYC:0
+CB02  90 03     BCC $CB07                       A:80 X:80 Y:80 P:27 SP:FB PPU:  0, 00 CYC:0
+CB04  4C 0B CB  JMP $CB0B                       A:80 X:80 Y:80 P:27 SP:FB PPU:  0, 00 CYC:0
+CB0B  EA        NOP                             A:80 X:80 Y:80 P:27 SP:FB PPU:  0, 00 CYC:0
+CB0C  E0 81     CPX #$81                        A:80 X:80 Y:80 P:27 SP:FB PPU:  0, 00 CYC:0
+CB0E  B0 07     BCS $CB17                       A:80 X:80 Y:80 P:A4 SP:FB PPU:  0, 00 CYC:0
+CB10  F0 05     BEQ $CB17                       A:80 X:80 Y:80 P:A4 SP:FB PPU:  0, 00 CYC:0
+CB12  10 03     BPL $CB17                       A:80 X:80 Y:80 P:A4 SP:FB PPU:  0, 00 CYC:0
+CB14  4C 1B CB  JMP $CB1B                       A:80 X:80 Y:80 P:A4 SP:FB PPU:  0, 00 CYC:0
+CB1B  EA        NOP                             A:80 X:80 Y:80 P:A4 SP:FB PPU:  0, 00 CYC:0
+CB1C  E0 7F     CPX #$7F                        A:80 X:80 Y:80 P:A4 SP:FB PPU:  0, 00 CYC:0
+CB1E  90 07     BCC $CB27                       A:80 X:80 Y:80 P:25 SP:FB PPU:  0, 00 CYC:0
+CB20  F0 05     BEQ $CB27                       A:80 X:80 Y:80 P:25 SP:FB PPU:  0, 00 CYC:0
+CB22  30 03     BMI $CB27                       A:80 X:80 Y:80 P:25 SP:FB PPU:  0, 00 CYC:0
+CB24  4C 2B CB  JMP $CB2B                       A:80 X:80 Y:80 P:25 SP:FB PPU:  0, 00 CYC:0
+CB2B  EA        NOP                             A:80 X:80 Y:80 P:25 SP:FB PPU:  0, 00 CYC:0
+CB2C  38        SEC                             A:80 X:80 Y:80 P:25 SP:FB PPU:  0, 00 CYC:0
+CB2D  B8        CLV                             A:80 X:80 Y:80 P:25 SP:FB PPU:  0, 00 CYC:0
+CB2E  A2 9F     LDX #$9F                        A:80 X:80 Y:80 P:25 SP:FB PPU:  0, 00 CYC:0
+CB30  F0 09     BEQ $CB3B                       A:80 X:9F Y:80 P:A5 SP:FB PPU:  0, 00 CYC:0
+CB32  10 07     BPL $CB3B                       A:80 X:9F Y:80 P:A5 SP:FB PPU:  0, 00 CYC:0
+CB34  70 05     BVS $CB3B                       A:80 X:9F Y:80 P:A5 SP:FB PPU:  0, 00 CYC:0
+CB36  90 03     BCC $CB3B                       A:80 X:9F Y:80 P:A5 SP:FB PPU:  0, 00 CYC:0
+CB38  4C 3F CB  JMP $CB3F                       A:80 X:9F Y:80 P:A5 SP:FB PPU:  0, 00 CYC:0
+CB3F  EA        NOP                             A:80 X:9F Y:80 P:A5 SP:FB PPU:  0, 00 CYC:0
+CB40  18        CLC                             A:80 X:9F Y:80 P:A5 SP:FB PPU:  0, 00 CYC:0
+CB41  24 01     BIT $01 = FF                    A:80 X:9F Y:80 P:A4 SP:FB PPU:  0, 00 CYC:0
+CB43  A2 00     LDX #$00                        A:80 X:9F Y:80 P:E4 SP:FB PPU:  0, 00 CYC:0
+CB45  D0 09     BNE $CB50                       A:80 X:00 Y:80 P:66 SP:FB PPU:  0, 00 CYC:0
+CB47  30 07     BMI $CB50                       A:80 X:00 Y:80 P:66 SP:FB PPU:  0, 00 CYC:0
+CB49  50 05     BVC $CB50                       A:80 X:00 Y:80 P:66 SP:FB PPU:  0, 00 CYC:0
+CB4B  B0 03     BCS $CB50                       A:80 X:00 Y:80 P:66 SP:FB PPU:  0, 00 CYC:0
+CB4D  4C 54 CB  JMP $CB54                       A:80 X:00 Y:80 P:66 SP:FB PPU:  0, 00 CYC:0
+CB54  EA        NOP                             A:80 X:00 Y:80 P:66 SP:FB PPU:  0, 00 CYC:0
+CB55  38        SEC                             A:80 X:00 Y:80 P:66 SP:FB PPU:  0, 00 CYC:0
+CB56  B8        CLV                             A:80 X:00 Y:80 P:67 SP:FB PPU:  0, 00 CYC:0
+CB57  A0 9F     LDY #$9F                        A:80 X:00 Y:80 P:27 SP:FB PPU:  0, 00 CYC:0
+CB59  F0 09     BEQ $CB64                       A:80 X:00 Y:9F P:A5 SP:FB PPU:  0, 00 CYC:0
+CB5B  10 07     BPL $CB64                       A:80 X:00 Y:9F P:A5 SP:FB PPU:  0, 00 CYC:0
+CB5D  70 05     BVS $CB64                       A:80 X:00 Y:9F P:A5 SP:FB PPU:  0, 00 CYC:0
+CB5F  90 03     BCC $CB64                       A:80 X:00 Y:9F P:A5 SP:FB PPU:  0, 00 CYC:0
+CB61  4C 68 CB  JMP $CB68                       A:80 X:00 Y:9F P:A5 SP:FB PPU:  0, 00 CYC:0
+CB68  EA        NOP                             A:80 X:00 Y:9F P:A5 SP:FB PPU:  0, 00 CYC:0
+CB69  18        CLC                             A:80 X:00 Y:9F P:A5 SP:FB PPU:  0, 00 CYC:0
+CB6A  24 01     BIT $01 = FF                    A:80 X:00 Y:9F P:A4 SP:FB PPU:  0, 00 CYC:0
+CB6C  A0 00     LDY #$00                        A:80 X:00 Y:9F P:E4 SP:FB PPU:  0, 00 CYC:0
+CB6E  D0 09     BNE $CB79                       A:80 X:00 Y:00 P:66 SP:FB PPU:  0, 00 CYC:0
+CB70  30 07     BMI $CB79                       A:80 X:00 Y:00 P:66 SP:FB PPU:  0, 00 CYC:0
+CB72  50 05     BVC $CB79                       A:80 X:00 Y:00 P:66 SP:FB PPU:  0, 00 CYC:0
+CB74  B0 03     BCS $CB79                       A:80 X:00 Y:00 P:66 SP:FB PPU:  0, 00 CYC:0
+CB76  4C 7D CB  JMP $CB7D                       A:80 X:00 Y:00 P:66 SP:FB PPU:  0, 00 CYC:0
+CB7D  EA        NOP                             A:80 X:00 Y:00 P:66 SP:FB PPU:  0, 00 CYC:0
+CB7E  A9 55     LDA #$55                        A:80 X:00 Y:00 P:66 SP:FB PPU:  0, 00 CYC:0
+CB80  A2 AA     LDX #$AA                        A:55 X:00 Y:00 P:64 SP:FB PPU:  0, 00 CYC:0
+CB82  A0 33     LDY #$33                        A:55 X:AA Y:00 P:E4 SP:FB PPU:  0, 00 CYC:0
+CB84  C9 55     CMP #$55                        A:55 X:AA Y:33 P:64 SP:FB PPU:  0, 00 CYC:0
+CB86  D0 23     BNE $CBAB                       A:55 X:AA Y:33 P:67 SP:FB PPU:  0, 00 CYC:0
+CB88  E0 AA     CPX #$AA                        A:55 X:AA Y:33 P:67 SP:FB PPU:  0, 00 CYC:0
+CB8A  D0 1F     BNE $CBAB                       A:55 X:AA Y:33 P:67 SP:FB PPU:  0, 00 CYC:0
+CB8C  C0 33     CPY #$33                        A:55 X:AA Y:33 P:67 SP:FB PPU:  0, 00 CYC:0
+CB8E  D0 1B     BNE $CBAB                       A:55 X:AA Y:33 P:67 SP:FB PPU:  0, 00 CYC:0
+CB90  C9 55     CMP #$55                        A:55 X:AA Y:33 P:67 SP:FB PPU:  0, 00 CYC:0
+CB92  D0 17     BNE $CBAB                       A:55 X:AA Y:33 P:67 SP:FB PPU:  0, 00 CYC:0
+CB94  E0 AA     CPX #$AA                        A:55 X:AA Y:33 P:67 SP:FB PPU:  0, 00 CYC:0
+CB96  D0 13     BNE $CBAB                       A:55 X:AA Y:33 P:67 SP:FB PPU:  0, 00 CYC:0
+CB98  C0 33     CPY #$33                        A:55 X:AA Y:33 P:67 SP:FB PPU:  0, 00 CYC:0
+CB9A  D0 0F     BNE $CBAB                       A:55 X:AA Y:33 P:67 SP:FB PPU:  0, 00 CYC:0
+CB9C  C9 56     CMP #$56                        A:55 X:AA Y:33 P:67 SP:FB PPU:  0, 00 CYC:0
+CB9E  F0 0B     BEQ $CBAB                       A:55 X:AA Y:33 P:E4 SP:FB PPU:  0, 00 CYC:0
+CBA0  E0 AB     CPX #$AB                        A:55 X:AA Y:33 P:E4 SP:FB PPU:  0, 00 CYC:0
+CBA2  F0 07     BEQ $CBAB                       A:55 X:AA Y:33 P:E4 SP:FB PPU:  0, 00 CYC:0
+CBA4  C0 34     CPY #$34                        A:55 X:AA Y:33 P:E4 SP:FB PPU:  0, 00 CYC:0
+CBA6  F0 03     BEQ $CBAB                       A:55 X:AA Y:33 P:E4 SP:FB PPU:  0, 00 CYC:0
+CBA8  4C AF CB  JMP $CBAF                       A:55 X:AA Y:33 P:E4 SP:FB PPU:  0, 00 CYC:0
+CBAF  A0 71     LDY #$71                        A:55 X:AA Y:33 P:E4 SP:FB PPU:  0, 00 CYC:0
+CBB1  20 31 F9  JSR $F931                       A:55 X:AA Y:71 P:64 SP:FB PPU:  0, 00 CYC:0
+F931  24 01     BIT $01 = FF                    A:55 X:AA Y:71 P:64 SP:F9 PPU:  0, 00 CYC:0
+F933  A9 40     LDA #$40                        A:55 X:AA Y:71 P:E4 SP:F9 PPU:  0, 00 CYC:0
+F935  38        SEC                             A:40 X:AA Y:71 P:64 SP:F9 PPU:  0, 00 CYC:0
+F936  60        RTS                             A:40 X:AA Y:71 P:65 SP:F9 PPU:  0, 00 CYC:0
+CBB4  E9 40     SBC #$40                        A:40 X:AA Y:71 P:65 SP:FB PPU:  0, 00 CYC:0
+CBB6  20 37 F9  JSR $F937                       A:00 X:AA Y:71 P:27 SP:FB PPU:  0, 00 CYC:0
+F937  30 0B     BMI $F944                       A:00 X:AA Y:71 P:27 SP:F9 PPU:  0, 00 CYC:0
+F939  90 09     BCC $F944                       A:00 X:AA Y:71 P:27 SP:F9 PPU:  0, 00 CYC:0
+F93B  D0 07     BNE $F944                       A:00 X:AA Y:71 P:27 SP:F9 PPU:  0, 00 CYC:0
+F93D  70 05     BVS $F944                       A:00 X:AA Y:71 P:27 SP:F9 PPU:  0, 00 CYC:0
+F93F  C9 00     CMP #$00                        A:00 X:AA Y:71 P:27 SP:F9 PPU:  0, 00 CYC:0
+F941  D0 01     BNE $F944                       A:00 X:AA Y:71 P:27 SP:F9 PPU:  0, 00 CYC:0
+F943  60        RTS                             A:00 X:AA Y:71 P:27 SP:F9 PPU:  0, 00 CYC:0
+CBB9  C8        INY                             A:00 X:AA Y:71 P:27 SP:FB PPU:  0, 00 CYC:0
+CBBA  20 47 F9  JSR $F947                       A:00 X:AA Y:72 P:25 SP:FB PPU:  0, 00 CYC:0
+F947  B8        CLV                             A:00 X:AA Y:72 P:25 SP:F9 PPU:  0, 00 CYC:0
+F948  38        SEC                             A:00 X:AA Y:72 P:25 SP:F9 PPU:  0, 00 CYC:0
+F949  A9 40     LDA #$40                        A:00 X:AA Y:72 P:25 SP:F9 PPU:  0, 00 CYC:0
+F94B  60        RTS                             A:40 X:AA Y:72 P:25 SP:F9 PPU:  0, 00 CYC:0
+CBBD  E9 3F     SBC #$3F                        A:40 X:AA Y:72 P:25 SP:FB PPU:  0, 00 CYC:0
+CBBF  20 4C F9  JSR $F94C                       A:01 X:AA Y:72 P:25 SP:FB PPU:  0, 00 CYC:0
+F94C  F0 0B     BEQ $F959                       A:01 X:AA Y:72 P:25 SP:F9 PPU:  0, 00 CYC:0
+F94E  30 09     BMI $F959                       A:01 X:AA Y:72 P:25 SP:F9 PPU:  0, 00 CYC:0
+F950  90 07     BCC $F959                       A:01 X:AA Y:72 P:25 SP:F9 PPU:  0, 00 CYC:0
+F952  70 05     BVS $F959                       A:01 X:AA Y:72 P:25 SP:F9 PPU:  0, 00 CYC:0
+F954  C9 01     CMP #$01                        A:01 X:AA Y:72 P:25 SP:F9 PPU:  0, 00 CYC:0
+F956  D0 01     BNE $F959                       A:01 X:AA Y:72 P:27 SP:F9 PPU:  0, 00 CYC:0
+F958  60        RTS                             A:01 X:AA Y:72 P:27 SP:F9 PPU:  0, 00 CYC:0
+CBC2  C8        INY                             A:01 X:AA Y:72 P:27 SP:FB PPU:  0, 00 CYC:0
+CBC3  20 5C F9  JSR $F95C                       A:01 X:AA Y:73 P:25 SP:FB PPU:  0, 00 CYC:0
+F95C  A9 40     LDA #$40                        A:01 X:AA Y:73 P:25 SP:F9 PPU:  0, 00 CYC:0
+F95E  38        SEC                             A:40 X:AA Y:73 P:25 SP:F9 PPU:  0, 00 CYC:0
+F95F  24 01     BIT $01 = FF                    A:40 X:AA Y:73 P:25 SP:F9 PPU:  0, 00 CYC:0
+F961  60        RTS                             A:40 X:AA Y:73 P:E5 SP:F9 PPU:  0, 00 CYC:0
+CBC6  E9 41     SBC #$41                        A:40 X:AA Y:73 P:E5 SP:FB PPU:  0, 00 CYC:0
+CBC8  20 62 F9  JSR $F962                       A:FF X:AA Y:73 P:A4 SP:FB PPU:  0, 00 CYC:0
+F962  B0 0B     BCS $F96F                       A:FF X:AA Y:73 P:A4 SP:F9 PPU:  0, 00 CYC:0
+F964  F0 09     BEQ $F96F                       A:FF X:AA Y:73 P:A4 SP:F9 PPU:  0, 00 CYC:0
+F966  10 07     BPL $F96F                       A:FF X:AA Y:73 P:A4 SP:F9 PPU:  0, 00 CYC:0
+F968  70 05     BVS $F96F                       A:FF X:AA Y:73 P:A4 SP:F9 PPU:  0, 00 CYC:0
+F96A  C9 FF     CMP #$FF                        A:FF X:AA Y:73 P:A4 SP:F9 PPU:  0, 00 CYC:0
+F96C  D0 01     BNE $F96F                       A:FF X:AA Y:73 P:27 SP:F9 PPU:  0, 00 CYC:0
+F96E  60        RTS                             A:FF X:AA Y:73 P:27 SP:F9 PPU:  0, 00 CYC:0
+CBCB  C8        INY                             A:FF X:AA Y:73 P:27 SP:FB PPU:  0, 00 CYC:0
+CBCC  20 72 F9  JSR $F972                       A:FF X:AA Y:74 P:25 SP:FB PPU:  0, 00 CYC:0
+F972  18        CLC                             A:FF X:AA Y:74 P:25 SP:F9 PPU:  0, 00 CYC:0
+F973  A9 80     LDA #$80                        A:FF X:AA Y:74 P:24 SP:F9 PPU:  0, 00 CYC:0
+F975  60        RTS                             A:80 X:AA Y:74 P:A4 SP:F9 PPU:  0, 00 CYC:0
+CBCF  E9 00     SBC #$00                        A:80 X:AA Y:74 P:A4 SP:FB PPU:  0, 00 CYC:0
+CBD1  20 76 F9  JSR $F976                       A:7F X:AA Y:74 P:65 SP:FB PPU:  0, 00 CYC:0
+F976  90 05     BCC $F97D                       A:7F X:AA Y:74 P:65 SP:F9 PPU:  0, 00 CYC:0
+F978  C9 7F     CMP #$7F                        A:7F X:AA Y:74 P:65 SP:F9 PPU:  0, 00 CYC:0
+F97A  D0 01     BNE $F97D                       A:7F X:AA Y:74 P:67 SP:F9 PPU:  0, 00 CYC:0
+F97C  60        RTS                             A:7F X:AA Y:74 P:67 SP:F9 PPU:  0, 00 CYC:0
+CBD4  C8        INY                             A:7F X:AA Y:74 P:67 SP:FB PPU:  0, 00 CYC:0
+CBD5  20 80 F9  JSR $F980                       A:7F X:AA Y:75 P:65 SP:FB PPU:  0, 00 CYC:0
+F980  38        SEC                             A:7F X:AA Y:75 P:65 SP:F9 PPU:  0, 00 CYC:0
+F981  A9 81     LDA #$81                        A:7F X:AA Y:75 P:65 SP:F9 PPU:  0, 00 CYC:0
+F983  60        RTS                             A:81 X:AA Y:75 P:E5 SP:F9 PPU:  0, 00 CYC:0
+CBD8  E9 7F     SBC #$7F                        A:81 X:AA Y:75 P:E5 SP:FB PPU:  0, 00 CYC:0
+CBDA  20 84 F9  JSR $F984                       A:02 X:AA Y:75 P:65 SP:FB PPU:  0, 00 CYC:0
+F984  50 07     BVC $F98D                       A:02 X:AA Y:75 P:65 SP:F9 PPU:  0, 00 CYC:0
+F986  90 05     BCC $F98D                       A:02 X:AA Y:75 P:65 SP:F9 PPU:  0, 00 CYC:0
+F988  C9 02     CMP #$02                        A:02 X:AA Y:75 P:65 SP:F9 PPU:  0, 00 CYC:0
+F98A  D0 01     BNE $F98D                       A:02 X:AA Y:75 P:67 SP:F9 PPU:  0, 00 CYC:0
+F98C  60        RTS                             A:02 X:AA Y:75 P:67 SP:F9 PPU:  0, 00 CYC:0
+CBDD  60        RTS                             A:02 X:AA Y:75 P:67 SP:FB PPU:  0, 00 CYC:0
+C606  20 DE CB  JSR $CBDE                       A:02 X:AA Y:75 P:67 SP:FD PPU:  0, 00 CYC:0
+CBDE  EA        NOP                             A:02 X:AA Y:75 P:67 SP:FB PPU:  0, 00 CYC:0
+CBDF  A9 FF     LDA #$FF                        A:02 X:AA Y:75 P:67 SP:FB PPU:  0, 00 CYC:0
+CBE1  85 01     STA $01 = FF                    A:FF X:AA Y:75 P:E5 SP:FB PPU:  0, 00 CYC:0
+CBE3  A9 44     LDA #$44                        A:FF X:AA Y:75 P:E5 SP:FB PPU:  0, 00 CYC:0
+CBE5  A2 55     LDX #$55                        A:44 X:AA Y:75 P:65 SP:FB PPU:  0, 00 CYC:0
+CBE7  A0 66     LDY #$66                        A:44 X:55 Y:75 P:65 SP:FB PPU:  0, 00 CYC:0
+CBE9  E8        INX                             A:44 X:55 Y:66 P:65 SP:FB PPU:  0, 00 CYC:0
+CBEA  88        DEY                             A:44 X:56 Y:66 P:65 SP:FB PPU:  0, 00 CYC:0
+CBEB  E0 56     CPX #$56                        A:44 X:56 Y:65 P:65 SP:FB PPU:  0, 00 CYC:0
+CBED  D0 21     BNE $CC10                       A:44 X:56 Y:65 P:67 SP:FB PPU:  0, 00 CYC:0
+CBEF  C0 65     CPY #$65                        A:44 X:56 Y:65 P:67 SP:FB PPU:  0, 00 CYC:0
+CBF1  D0 1D     BNE $CC10                       A:44 X:56 Y:65 P:67 SP:FB PPU:  0, 00 CYC:0
+CBF3  E8        INX                             A:44 X:56 Y:65 P:67 SP:FB PPU:  0, 00 CYC:0
+CBF4  E8        INX                             A:44 X:57 Y:65 P:65 SP:FB PPU:  0, 00 CYC:0
+CBF5  88        DEY                             A:44 X:58 Y:65 P:65 SP:FB PPU:  0, 00 CYC:0
+CBF6  88        DEY                             A:44 X:58 Y:64 P:65 SP:FB PPU:  0, 00 CYC:0
+CBF7  E0 58     CPX #$58                        A:44 X:58 Y:63 P:65 SP:FB PPU:  0, 00 CYC:0
+CBF9  D0 15     BNE $CC10                       A:44 X:58 Y:63 P:67 SP:FB PPU:  0, 00 CYC:0
+CBFB  C0 63     CPY #$63                        A:44 X:58 Y:63 P:67 SP:FB PPU:  0, 00 CYC:0
+CBFD  D0 11     BNE $CC10                       A:44 X:58 Y:63 P:67 SP:FB PPU:  0, 00 CYC:0
+CBFF  CA        Unknwon                             A:44 X:58 Y:63 P:67 SP:FB PPU:  0, 00 CYC:0
