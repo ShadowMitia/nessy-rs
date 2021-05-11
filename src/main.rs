@@ -238,13 +238,14 @@ mod rp2a03 {
                 // TXS
                 0x9a => (Instructions::TXS, AddressingMode::Implied),
                 // AND
+                0x29 => (Instructions::AND, AddressingMode::Immediate),
+                0x25 => (Instructions::AND, AddressingMode::ZeroPage),
+                0x35 => (Instructions::AND, AddressingMode::ZeroPageIndexedWithX),
                 0x2D => (Instructions::AND, AddressingMode::Absolute),
                 0x3D => (Instructions::AND, AddressingMode::AbsoluteIndirectWithX),
                 0x39 => (Instructions::AND, AddressingMode::AbsoluteIndirectWithY),
-                0x29 => (Instructions::AND, AddressingMode::Immediate),
-                0x2A => (Instructions::AND, AddressingMode::Accumulator),
-                0x26 => (Instructions::AND, AddressingMode::ZeroPage),
-                0x36 => (Instructions::AND, AddressingMode::ZeroPageIndexedWithX),
+                0x21 => (Instructions::AND, AddressingMode::AbsoluteIndirectWithX),
+                0x31 => (Instructions::AND, AddressingMode::AbsoluteIndirectWithY),
                 // BEQ
                 0xF0 => (Instructions::BEQ, AddressingMode::Relative),
                 // CPX
@@ -586,6 +587,12 @@ mod rp2a03 {
         pub fn and(registers: &mut Registers, value: u8) {
             registers.a &= value;
 
+            registers.set_flag(StatusFlag::Z, registers.a == 0);
+            registers.set_flag(StatusFlag::N, registers.a >= 0x80);
+        }
+
+        pub fn and_acc(registers: &mut Registers) {
+            registers.a &= registers.a;
             registers.set_flag(StatusFlag::Z, registers.a == 0);
             registers.set_flag(StatusFlag::N, registers.a >= 0x80);
         }
@@ -2557,7 +2564,12 @@ fn main() {
                 registers.pc += num_operands;
             }
             Instructions::AND => {
-                and(&mut registers, addr as u8);
+                if addressing_mode == AddressingMode::Accumulator {
+                    and_acc(&mut registers);
+                } else {
+                    and(&mut registers, addr as u8);
+                }
+
                 registers.pc += num_operands;
             }
             Instructions::BEQ => {
