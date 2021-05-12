@@ -1910,7 +1910,7 @@ mod rp2a03 {
         }
 
         pub fn dec(registers: &mut Registers, memory: &mut Memory, addr: u16) {
-            memory.memory[addr as usize] -= 1;
+            memory.memory[addr as usize] = memory.memory[addr as usize].wrapping_sub(1);
             registers.set_flag(StatusFlag::Z, registers.a == 0);
             registers.set_flag(StatusFlag::N, registers.a >= 0x80);
         }
@@ -1984,7 +1984,8 @@ mod rp2a03 {
                     let addr = low_byte;
                     let low_byte = *memory.get(addr as usize).unwrap();
                     let high_byte = *memory.get((addr.wrapping_add(1)) as usize).unwrap();
-                    let addr = address_from_bytes(low_byte, high_byte) + registers.y as u16;
+                    let addr =
+                        address_from_bytes(low_byte, high_byte).wrapping_add(registers.y.into()) as u16;
                     Some(*memory.get(addr as usize).unwrap() as u16)
                 }
             };
