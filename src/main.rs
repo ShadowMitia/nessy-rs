@@ -450,16 +450,8 @@ mod rp2a03 {
 
         pub fn lda(registers: &mut Registers, operand: u16) {
             registers.a = operand as u8;
-            registers.status = if operand == 0 {
-                registers.status | 0b00000010
-            } else {
-                registers.status & 0b11111101
-            };
-            registers.status = if operand >= 0x80 {
-                registers.status | 0b10000000
-            } else {
-                registers.status & 0b01111111
-            };
+            registers.set_flag(StatusFlag::Z, registers.a == 0);
+            registers.set_flag(StatusFlag::N, registers.a >= 0x80);
         }
 
         #[test]
@@ -472,6 +464,10 @@ mod rp2a03 {
             lda(&mut registers, 0x0);
             assert_eq!(registers.a, 0x0);
             assert_eq!(registers.status & 0b00000010, 0b00000010);
+            registers.pc += 1; // Simulate reading insruction
+            lda(&mut registers, 0x80);
+            assert_eq!(registers.a, 0x80);
+            assert_eq!(registers.status & 0b10000000, 0b10000000);
             registers.pc += 1; // Simulate reading insruction
             lda(&mut registers, 0x80);
             assert_eq!(registers.a, 0x80);
@@ -1826,7 +1822,7 @@ mod rp2a03 {
             let bit0 = m as u8 & 0b1 == 0b1;
             let mut m = m >> 1;
             let carry = registers.is_flag_set(StatusFlag::C);
-            m |= if carry { 1 << 7} else { 0 };
+            m |= if carry { 1 << 7 } else { 0 };
             memory.memory[addr as usize] = m;
             registers.set_flag(StatusFlag::C, bit0);
             registers.set_flag(StatusFlag::Z, m == 0);
@@ -1881,7 +1877,7 @@ mod rp2a03 {
             let bit7 = m as u8 & 0b10000000 == 0b10000000;
             let mut m = m << 1;
             let carry = registers.is_flag_set(StatusFlag::C);
-            m |= if carry { 1  } else { 0 };
+            m |= if carry { 1 } else { 0 };
             registers.a = m;
             registers.set_flag(StatusFlag::C, bit7);
             registers.set_flag(StatusFlag::Z, registers.a == 0);
@@ -1948,24 +1944,24 @@ mod rp2a03 {
                     Some(*memory.get(addr as usize).unwrap() as u16)
                 }
                 AddressingMode::ZeroPageIndexedWithX => {
-                    let addr = low_byte + registers.x;
+                    let addr = low_byte.wrapping_add(registers.x);
                     Some(*memory.get(addr as usize).unwrap() as u16)
                 }
                 AddressingMode::ZeroPageIndexedWithY => {
-                    let addr = low_byte + registers.y;
+                    let addr = low_byte.wrapping_add(registers.y);
                     Some(*memory.get(addr as usize).unwrap() as u16)
                 }
                 AddressingMode::ZeroPageIndexedIndirect => {
-                    let addr = low_byte + registers.x;
-                    let low = *memory.get(addr as usize).unwrap();
-                    let high = *memory.get((addr + 1) as usize).unwrap();
-                    let addr = address_from_bytes(low, high);
-                    Some(addr as u16)
+                    let base = low_byte.wrapping_add(registers.x);
+                    let addr = memory[base as usize];
+                    let addr2 = memory[base.wrapping_add(1) as usize];
+                    let res = memory[address_from_bytes(addr, addr2) as usize];
+                    Some(res as u16)
                 }
                 AddressingMode::ZeroPageIndirectIndexedWithY => {
-                    let addr = address_from_bytes(low_byte, high_byte);
+                    let addr = low_byte;
                     let low_byte = *memory.get(addr as usize).unwrap();
-                    let high_byte = *memory.get((addr + 1) as usize).unwrap();
+                    let high_byte = *memory.get((addr.wrapping_add(1)) as usize).unwrap();
                     let addr = address_from_bytes(low_byte, high_byte) + registers.y as u16;
                     Some(*memory.get(addr as usize).unwrap() as u16)
                 }
@@ -2091,6 +2087,7 @@ mod rp2a03 {
             // Zero Page Indexed Indirect
             memory.memory[0x17] = 0x10;
             memory.memory[0x18] = 0xD0;
+            memory.memory[0xD010] = 0x42;
             registers.x = 2;
             let res = apply_addressing(
                 &memory,
@@ -2099,7 +2096,7 @@ mod rp2a03 {
                 0x15,
                 0x0,
             );
-            assert_eq!(res, Some(0xD010));
+            assert_eq!(res, Some(0x42));
 
             // Zero Page Indexed Indirect with Y
             memory.memory[0x002A] = 0x35;
@@ -2457,19 +2454,29 @@ fn main() {
                     AddressingMode::Immediate => {
                         write!(nestest_output, "#${:02X}    ", addr).unwrap()
                     }
+                    AddressingMode::ZeroPageIndexedIndirect => {
+                        let base = low_byte.wrapping_add(registers.x);
+                        let addr = memory.memory[base as usize];
+                        let addr2 = memory.memory[base.wrapping_add(1) as usize];
+                        let res = memory.memory[address_from_bytes(addr, addr2) as usize];
+                        write!(
+                            nestest_output,
+                            "(${:X},X) @ {:X} = {:04X} = {:02X}",
+                            low_byte, base, addr, res
+                        )
+                        .unwrap()
+                    }
                     // AddressingMode::Relative => write!(nestest_output, "${:04X}    ", registers.pc + 1 + addr),
                     AddressingMode::Absolute => write!(
                         nestest_output,
-                        "${:04X} = {:02}",
-                        addr, memory.memory[addr as usize]
+                        "${:04X} = {:02X}",
+                        address_from_bytes(low_byte, high_byte),
+                        memory.memory[addr as usize]
                     )
                     .unwrap(),
-                    AddressingMode::ZeroPage => write!(
-                        nestest_output,
-                        "${:02X} = {:02X}",
-                        ops.0, memory.memory[addr as usize]
-                    )
-                    .unwrap(),
+                    AddressingMode::ZeroPage => {
+                        write!(nestest_output, "${:02X} = {:02X}", low_byte, addr).unwrap()
+                    }
                     _ => write!(nestest_output, "    ").unwrap(),
                 },
             },
@@ -2495,16 +2502,13 @@ fn main() {
                     AddressingMode::Absolute => write!(
                         nestest_output,
                         "${:04X} = {:02X}",
-                        addr, memory.memory[addr as usize]
+                        address_from_bytes(low_byte, high_byte),
+                        memory.memory[addr as usize]
                     )
                     .unwrap(),
-
-                    AddressingMode::ZeroPage => write!(
-                        nestest_output,
-                        "${:02X} = {:02X}",
-                        ops.0, memory.memory[addr as usize]
-                    )
-                    .unwrap(),
+                    AddressingMode::ZeroPage => {
+                        write!(nestest_output, "${:02X} = {:02X}", low_byte, addr).unwrap()
+                    }
                     _ => write!(nestest_output, "        ").unwrap(),
                 },
             },
@@ -2582,9 +2586,9 @@ fn main() {
                 let addr = if addressing_mode == AddressingMode::Absolute {
                     memory.memory[addr as usize] as u16
                 } else {
-                    addr as u16
+                    addr
                 };
-                lda(&mut registers, addr);
+                lda(&mut registers, addr as u16);
                 registers.pc += num_operands;
             }
             Instructions::BRK => {
@@ -2593,6 +2597,11 @@ fn main() {
                 // TODO: Check if need to advance pc by 1, but probs not
             }
             Instructions::STA => {
+                let addr = if addressing_mode == AddressingMode::Absolute {
+                    memory.memory[addr as usize] as u16
+                } else {
+                    addr
+                };
                 sta(&mut registers, &mut memory, addr);
                 registers.pc += num_operands;
             }
