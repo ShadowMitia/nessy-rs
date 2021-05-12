@@ -129,7 +129,7 @@ mod rp2a03 {
     }
 
     pub mod instructions {
-        use std::ops::Add;
+        use std::{mem, ops::Add};
 
         use crate::{address_from_bytes, BREAK_VECTOR_ADDDRESS, STACK_ADDRESS};
 
@@ -191,6 +191,7 @@ mod rp2a03 {
             LSR,
             ROR,
             ROL,
+            DEC,
             Unknown,
         }
 
@@ -418,6 +419,11 @@ mod rp2a03 {
                 0x36 => (Instructions::ROL, AddressingMode::ZeroPageIndexedWithX),
                 0x2E => (Instructions::ROL, AddressingMode::Absolute),
                 0x3E => (Instructions::ROL, AddressingMode::AbsoluteIndirectWithX),
+                // DEC
+                0xC6 => (Instructions::DEC, AddressingMode::ZeroPage),
+                0xD6 => (Instructions::DEC, AddressingMode::ZeroPageIndexedWithX),
+                0xCE => (Instructions::DEC, AddressingMode::Absolute),
+                0xDE => (Instructions::DEC, AddressingMode::AbsoluteIndirectWithX),
                 // UNKNOWN
                 _ => (Instructions::Unknown, AddressingMode::Implied),
             }
@@ -1903,6 +1909,22 @@ mod rp2a03 {
             assert_eq!(registers.a, 0x9);
         }
 
+        pub fn dec(registers: &mut Registers, memory: &mut Memory, addr: u16) {
+            memory.memory[addr as usize] -= 1;
+            registers.set_flag(StatusFlag::Z, registers.a == 0);
+            registers.set_flag(StatusFlag::N, registers.a >= 0x80);
+        }
+
+        #[test]
+        fn dec_test() {
+            let mut registers = Registers::new();
+            let mut memory = Memory::new();
+
+            memory.memory[0x42] = 0x4;
+            dec(&mut registers, &mut memory, 0x42);
+            assert_eq!(memory.memory[0x42], 0x3);
+        }
+
         /**
         Applies addressing mode rules to operands and gives out 16-bit results
          */
@@ -2831,6 +2853,10 @@ fn main() {
                 } else {
                     rol(&mut registers, &mut memory, addr);
                 }
+                registers.pc += num_operands;
+            }
+            Instructions::DEC => {
+                dec(&mut registers, &mut memory, addr);
                 registers.pc += num_operands;
             }
 

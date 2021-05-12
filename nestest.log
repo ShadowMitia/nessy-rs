@@ -2114,4 +2114,4 @@ D4B9  A9 00     LDA #$00                        A:AC X:55 Y:AA P:A4 SP:FB PPU:  
 D4BB  85 78     STA $78 = 00                    A:00 X:55 Y:AA P:26 SP:FB PPU:  0, 00 CYC:0
 D4BD  24 01     BIT $01 = A9                    A:00 X:55 Y:AA P:26 SP:FB PPU:  0, 00 CYC:0
 D4BF  38        SEC                             A:00 X:55 Y:AA P:E6 SP:FB PPU:  0, 00 CYC:0
-D4C0  C6        Unknown                             A:00 X:55 Y:AA P:E7 SP:FB PPU:  0, 00 CYC:0
+D4C0  C6 78     DEC $78 = 00                    A:00 X:55 Y:AA P:E7 SP:FB PPU:  0, 00 CYC:0
