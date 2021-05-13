@@ -454,7 +454,7 @@ mod rp2a03 {
             assert_eq!(registers.status, 0b00000000);
         }
 
-        pub fn lda(registers: &mut Registers, operand: u16) {
+        pub fn lda(registers: &mut Registers, operand: u8) {
             registers.a = operand as u8;
             registers.set_flag(StatusFlag::Z, registers.a == 0);
             registers.set_flag(StatusFlag::N, registers.a >= 0x80);
@@ -1942,11 +1942,11 @@ mod rp2a03 {
                 AddressingMode::Immediate => Some(low_byte.into()),
                 AddressingMode::Absolute => {
                     let addr = address_from_bytes(low_byte, high_byte);
-                    Some(addr as u16)
+                    Some(addr)
                 }
                 AddressingMode::ZeroPage => {
                     let addr = low_byte;
-                    Some(*memory.get(addr as usize).unwrap() as u16)
+                    Some(addr as u16)
                 }
                 AddressingMode::Relative => Some(low_byte as u16),
                 AddressingMode::AbsoluteIndirect => {
@@ -1959,25 +1959,25 @@ mod rp2a03 {
                 }
                 AddressingMode::AbsoluteIndirectWithX => {
                     let addr = address_from_bytes(low_byte, high_byte) + registers.x as u16;
-                    Some(*memory.get(addr as usize).unwrap() as u16)
+                    Some(addr as u16)
                 }
                 AddressingMode::AbsoluteIndirectWithY => {
                     let addr = address_from_bytes(low_byte, high_byte) + registers.y as u16;
-                    Some(*memory.get(addr as usize).unwrap() as u16)
+                    Some(addr as u16)
                 }
                 AddressingMode::ZeroPageIndexedWithX => {
                     let addr = low_byte.wrapping_add(registers.x);
-                    Some(*memory.get(addr as usize).unwrap() as u16)
+                    Some(addr as u16)
                 }
                 AddressingMode::ZeroPageIndexedWithY => {
                     let addr = low_byte.wrapping_add(registers.y);
-                    Some(*memory.get(addr as usize).unwrap() as u16)
+                    Some(addr as u16)
                 }
                 AddressingMode::ZeroPageIndexedIndirect => {
                     let base = low_byte.wrapping_add(registers.x);
                     let addr = memory[base as usize];
                     let addr2 = memory[base.wrapping_add(1) as usize];
-                    let res = memory[address_from_bytes(addr, addr2) as usize];
+                    let res = address_from_bytes(addr, addr2);
                     Some(res as u16)
                 }
                 AddressingMode::ZeroPageIndirectIndexedWithY => {
@@ -1986,7 +1986,7 @@ mod rp2a03 {
                     let high_byte = *memory.get((addr.wrapping_add(1)) as usize).unwrap();
                     let addr = address_from_bytes(low_byte, high_byte)
                         .wrapping_add(registers.y.into()) as u16;
-                    Some(*memory.get(addr as usize).unwrap() as u16)
+                    Some(addr as u16)
                 }
             };
 
@@ -2039,9 +2039,8 @@ mod rp2a03 {
             assert_eq!(res, Some(0xD010));
 
             // ZERO PAGE
-            memory.memory[0x4] = 43;
             let res = apply_addressing(&memory, &registers, AddressingMode::ZeroPage, 0x4, 0x0);
-            assert_eq!(res, Some(43));
+            assert_eq!(res, Some(0x4));
 
             // Relative
             let res = apply_addressing(&memory, &registers, AddressingMode::Relative, 0x42, 0x0);
@@ -2060,7 +2059,6 @@ mod rp2a03 {
             assert_eq!(res, Some(0x00FF));
 
             // AbsoluteIndirectWithX
-            memory.memory[0xC003] = 0x5A;
             registers.x = 0x2;
             let res = apply_addressing(
                 &memory,
@@ -2069,10 +2067,9 @@ mod rp2a03 {
                 0x1,
                 0xC0,
             );
-            assert_eq!(res, Some(0x5A));
+            assert_eq!(res, Some(0xC003));
 
             // AbsoluteIndirectWithY
-            memory.memory[0xF004] = 0xEF;
             registers.y = 0x3;
             let res = apply_addressing(
                 &memory,
@@ -2081,10 +2078,9 @@ mod rp2a03 {
                 0x1,
                 0xF0,
             );
-            assert_eq!(res, Some(0xEF));
+            assert_eq!(res, Some(0xF004));
 
             // ZeroPageIndexedWithX
-            memory.memory[0x3] = 0xA5;
             registers.x = 0x2;
             let res = apply_addressing(
                 &memory,
@@ -2093,10 +2089,9 @@ mod rp2a03 {
                 0x1,
                 0x0,
             );
-            assert_eq!(res, Some(0xA5));
+            assert_eq!(res, Some(0x03));
 
             // ZeroPageIndexedWithY
-            memory.memory[0x4] = 0xE3;
             registers.y = 3;
             let res = apply_addressing(
                 &memory,
@@ -2105,12 +2100,11 @@ mod rp2a03 {
                 0x1,
                 0x0,
             );
-            assert_eq!(res, Some(0xE3));
+            assert_eq!(res, Some(0x04));
 
             // Zero Page Indexed Indirect
             memory.memory[0x17] = 0x10;
             memory.memory[0x18] = 0xD0;
-            memory.memory[0xD010] = 0x42;
             registers.x = 2;
             let res = apply_addressing(
                 &memory,
@@ -2119,12 +2113,11 @@ mod rp2a03 {
                 0x15,
                 0x0,
             );
-            assert_eq!(res, Some(0x42));
+            assert_eq!(res, Some(0xD010));
 
             // Zero Page Indexed Indirect with Y
             memory.memory[0x002A] = 0x35;
             memory.memory[0x002B] = 0xC2;
-            memory.memory[0xC238] = 0x2F;
             registers.y = 0x3;
             let res = apply_addressing(
                 &memory,
@@ -2133,7 +2126,7 @@ mod rp2a03 {
                 0x2A,
                 0x0,
             );
-            assert_eq!(res, Some(0x2F));
+            assert_eq!(res, Some(0xC238));
         }
     }
 }
@@ -2142,6 +2135,8 @@ use std::{
     fmt::write,
     fs::{read_to_string, File},
     io::{BufRead, BufReader, Read, Write},
+    thread::sleep,
+    time::Duration,
 };
 
 use rp2a03::{instructions::*, Registers, *};
@@ -2167,7 +2162,6 @@ fn get_operands(registers: &Registers, memory: &Memory) -> (u8, u8) {
 }
 
 mod nes_rom {
-    use std::convert::TryInto;
 
     use super::*;
 
@@ -2191,8 +2185,8 @@ mod nes_rom {
             Unknown = u32::MAX,
         }
 
-        impl From<u32> for Mapper {
-            fn from(from: u32) -> Self {
+        impl From<u8> for Mapper {
+            fn from(from: u8) -> Self {
                 match from {
                     0 => Mapper::Nrom,
                     _ => Mapper::Unknown,
@@ -2223,12 +2217,9 @@ mod nes_rom {
 
     impl NESFile {
         pub fn new(rom: &[u8]) -> Self {
-            let NES = &rom[0..4];
+            let nes = &rom[0..4];
 
-            println!(
-                "{}{}{} {}",
-                rom[0] as char, rom[1] as char, rom[2] as char, rom[3]
-            );
+            println!("{}{}{}", nes[0] as char, nes[1] as char, nes[2] as char);
 
             let num_prgrom = rom[4];
             let num_chrrom = rom[5];
@@ -2281,7 +2272,7 @@ mod nes_rom {
             let format = NESFile::get_file_format(rom);
 
             Self {
-                mapper: mappers::Mapper::from(mapper as u32),
+                mapper: mapper.into(),
                 num_prgrom,
                 num_chrrom,
                 data: rom.to_vec(),
@@ -2308,66 +2299,6 @@ mod nes_rom {
     }
 }
 
-fn print_nestest_log(
-    instruction: Instructions,
-    registers: &Registers,
-    memory: &Memory,
-    num_operands: u16,
-    addr: u16,
-    ops: (u8, u8),
-) {
-    // P : Processor status
-    // A : Accumulator
-    // X : register X
-    //
-    print!(
-        "{:04X}  {:02X} ",
-        registers.pc, memory.memory[registers.pc as usize]
-    );
-    if num_operands > 0 {
-        print!("{:02X} ", ops.0);
-    } else {
-        print!("   ");
-    }
-    if num_operands >= 2 {
-        print!("{:02X} ", ops.1);
-    } else {
-        print!("   ");
-    }
-    print!("{:4?} ", instruction);
-
-    match num_operands {
-        1 => match instruction {
-            Instructions::BCC
-            | Instructions::BCS
-            | Instructions::BNE
-            | Instructions::BPL
-            | Instructions::BEQ => {
-                print!("{:04X} ", registers.pc + addr + 2)
-            }
-            _ => print!("{:04X} ", addr),
-        },
-        2 => match instruction {
-            Instructions::BCC
-            | Instructions::BCS
-            | Instructions::BNE
-            | Instructions::BPL
-            | Instructions::BEQ => {
-                print!("{:04X} ", registers.pc + addr)
-            }
-            _ => print!("{:04X} ", addr),
-        },
-        _ => print!("     "),
-    }
-
-    print!(
-        "A:{:2X} X:{:2X} Y:{:2X} P:{:2X} SP:{:2X} PPU: 0, 00 CYC:0",
-        registers.a, registers.x, registers.y, registers.status, memory.stack_pointer
-    );
-
-    println!();
-}
-
 fn main() {
     println!("Nessy 🐉!");
 
@@ -2378,15 +2309,14 @@ fn main() {
     let mut memory = Memory::new();
 
     let mut is_nestest = false;
-    let nestest = include_bytes!("../nestest_reference.log");
+    let nestest = include_bytes!("../nestest.nes");
 
     // Load ROM and decode header
-
     let nesfile = if args.len() > 1 {
         let input = std::fs::File::open(&args[1]).unwrap();
         let mut buffered = BufReader::new(input);
         let mut rom = Vec::new();
-        buffered.read_to_end(&mut rom);
+        buffered.read_to_end(&mut rom).unwrap();
         let rom = rom.as_slice();
         nes_rom::NESFile::new(rom)
     } else {
@@ -2444,6 +2374,8 @@ fn main() {
     let reference_buffered = BufReader::new(reference);
     let mut reference_lines = reference_buffered.lines();
 
+    let mut count = 0;
+
     loop {
         let byte = memory.memory[registers.pc as usize];
         let (instruction, addressing_mode) = match_instruction(byte);
@@ -2462,155 +2394,116 @@ fn main() {
         )
         .unwrap_or(0);
 
+        let mirror_addr = if addr <= 0x01FFF { addr % 0x7FF } else { addr };
+
         // print_nestest_log(instruction, &registers, &memory, num_operands, addr, ops);
 
         if is_nestest {
-            // PC
-            write!(nestest_output, "{:04X}", registers.pc).unwrap();
+            let pc = format!("{:04X}", registers.pc);
 
-            write!(nestest_output, "  ").unwrap();
+            let instruction_byte = format!("{:02X}", byte);
 
-            write!(
-                nestest_output,
-                "{:02X}",
-                memory.memory[registers.pc as usize]
-            )
-            .unwrap();
-
-            write!(nestest_output, " ").unwrap();
-
-            if num_operands > 0 {
-                write!(nestest_output, "{:02X} ", ops.0).unwrap();
+            let op1 = if num_operands >= 1 {
+                format!("{:02X}", ops.0)
             } else {
-                write!(nestest_output, "   ").unwrap();
-            }
-            if num_operands >= 2 {
-                write!(nestest_output, "{:02X} ", ops.1).unwrap();
-            } else {
-                write!(nestest_output, "   ").unwrap();
-            }
-
-            write!(nestest_output, " ").unwrap();
-            write!(nestest_output, "{:3?} ", instruction).unwrap();
-
-            match num_operands {
-                1 => match instruction {
-                    Instructions::BCC
-                    | Instructions::BCS
-                    | Instructions::BNE
-                    | Instructions::BPL
-                    | Instructions::BVS
-                    | Instructions::BVC
-                    | Instructions::BMI
-                    | Instructions::BEQ => {
-                        write!(nestest_output, "${:02X}   ", registers.pc + addr + 2).unwrap()
-                    }
-
-                    _ => match addressing_mode {
-                        AddressingMode::Immediate => {
-                            write!(nestest_output, "#${:02X}    ", addr).unwrap()
-                        }
-                        AddressingMode::ZeroPageIndexedIndirect => {
-                            let base = low_byte.wrapping_add(registers.x);
-                            let addr = memory.memory[base as usize];
-                            let addr2 = memory.memory[base.wrapping_add(1) as usize];
-                            let res = memory.memory[address_from_bytes(addr, addr2) as usize];
-                            write!(
-                                nestest_output,
-                                "(${:X},X) @ {:X} = {:04X} = {:02X}",
-                                low_byte, base, addr, res
-                            )
-                            .unwrap()
-                        }
-                        // AddressingMode::Relative => write!(nestest_output, "${:04X}    ", registers.pc + 1 + addr),
-                        AddressingMode::Absolute => write!(
-                            nestest_output,
-                            "${:04X} = {:02X}",
-                            address_from_bytes(low_byte, high_byte),
-                            memory.memory[addr as usize]
-                        )
-                        .unwrap(),
-                        AddressingMode::ZeroPage => {
-                            write!(nestest_output, "${:02X} = {:02X}", low_byte, addr).unwrap()
-                        }
-                        _ => write!(nestest_output, "    ").unwrap(),
-                    },
-                },
-                2 => match instruction {
-                    Instructions::BCC
-                    | Instructions::BCS
-                    | Instructions::BNE
-                    | Instructions::BPL
-                    | Instructions::BVS
-                    | Instructions::BVC
-                    | Instructions::BMI
-                    | Instructions::BEQ => {
-                        write!(nestest_output, "${:04X}    ", registers.pc + addr).unwrap()
-                    }
-                    // Have absolute adressing but don't show the = {} part
-                    Instructions::JSR | Instructions::JMP => {
-                        write!(nestest_output, "${:04X}   ", addr).unwrap()
-                    }
-                    _ => match addressing_mode {
-                        AddressingMode::Immediate => {
-                            write!(nestest_output, "#${:04X}  ", addr).unwrap()
-                        }
-                        AddressingMode::Absolute => write!(
-                            nestest_output,
-                            "${:04X} = {:02X}",
-                            address_from_bytes(low_byte, high_byte),
-                            memory.memory[addr as usize]
-                        )
-                        .unwrap(),
-                        AddressingMode::ZeroPage => {
-                            write!(nestest_output, "${:02X} = {:02X}", low_byte, addr).unwrap()
-                        }
-                        _ => write!(nestest_output, "        ").unwrap(),
-                    },
-                },
-                _ => match addressing_mode {
-                    AddressingMode::Accumulator => write!(nestest_output, "A       ").unwrap(),
-                    _ => write!(nestest_output, "        ").unwrap(),
-                },
+                "  ".to_string()
             };
 
-            write!(nestest_output, "                    ").unwrap();
+            let op2 = if num_operands > 1 {
+                format!("{:02X}", ops.1)
+            } else {
+                "  ".to_string()
+            };
 
-            write!(
-                nestest_output,
-                "A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X} PPU:  0, 00 CYC:0",
+            let instr = format!("{:?}", instruction);
+
+            let addressing_stuff = format!(
+                "{:27}",
+                match (addressing_mode.clone(), num_operands) {
+                    (AddressingMode::Relative, _) => format!("${:04X}", registers.pc + addr + 2),
+                    (AddressingMode::Absolute, _)
+                    | (AddressingMode::AbsoluteIndirect, _)
+                    | (AddressingMode::AbsoluteIndirectWithX, _)
+                    | (AddressingMode::AbsoluteIndirectWithY, _) => match instruction {
+                        Instructions::JMP
+                        | Instructions::BCS
+                        | Instructions::JSR
+                        | Instructions::BCC
+                        | Instructions::BEQ
+                        | Instructions::BMI
+                        | Instructions::BNE
+                        | Instructions::BPL
+                        | Instructions::BVC => format!("${:04X}", addr),
+                        _ => format!(
+                            "${:04X} = {:02X}",
+                            addr, memory.memory[mirror_addr as usize]
+                        ),
+                    },
+                    (AddressingMode::Immediate, _) => format!("#${:02X}", addr),
+                    (AddressingMode::Accumulator, _) => "A".to_string(),
+                    (AddressingMode::ZeroPageIndirectIndexedWithY, _) => format!(
+                        "(${:02X},X) @ {:02X} = {:04X} = {:02X}",
+                        ops.0,
+                        ops.0.wrapping_add(registers.x),
+                        addr,
+                        memory.memory[addr as usize]
+                    ),
+                    (AddressingMode::ZeroPageIndexedIndirect, _) => format!(
+                        "(${:02X},X) @ {:02X} = {:04X} = {:02X}",
+                        ops.0,
+                        ops.0.wrapping_add(registers.x),
+                        addr,
+                        memory.memory[addr as usize]
+                    ),
+                    (AddressingMode::ZeroPage, _) => format!(
+                        "${:02X} = {:02X}",
+                        addr, memory.memory[mirror_addr as usize]
+                    ),
+
+                    _ => "".to_string(),
+                }
+            );
+
+            let registers_and_stuff = format!(
+                "A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}",
                 registers.a, registers.x, registers.y, registers.status, memory.stack_pointer
-            )
-            .unwrap();
+            );
 
-            writeln!(nestest_output).unwrap();
+            let ppu_stuff = "PPU";
+            let cycle_stuff = "CYC";
 
-            let output = File::open("nestest.log").unwrap();
-            let output_buffered = BufReader::new(output);
+            let res = format!(
+                "{}  {} {} {}  {} {} {} {} {}",
+                pc,
+                instruction_byte,
+                op1,
+                op2,
+                instr,
+                addressing_stuff,
+                registers_and_stuff,
+                ppu_stuff,
+                cycle_stuff
+            );
 
             let ref_line = reference_lines.next().unwrap();
 
-            let output_line = output_buffered.lines().last().unwrap();
             let ref_columns_1 = ref_line.unwrap();
             let ref_columns = ref_columns_1
                 .split(' ')
                 // .filter(|&thing| !thing.is_empty())
                 .collect::<Vec<&str>>();
-            let output_columns = output_line.unwrap();
-            let output_columns = output_columns
+            let output_columns = res
                 .split(' ')
                 // .filter(|&thing| !thing.is_empty())
                 .collect::<Vec<&str>>();
 
             let mut matched = true;
 
-            for ((index, &ref_col), output_col) in
-                ref_columns.iter().enumerate().zip(output_columns.clone())
-            {
-                // if index == 0 {
-                //     println!("\u{001b}[37m{:?}", output_columns);
-                //     println!("\u{001b}[37m{:?}", ref_columns);
-                // }
+            for (&ref_col, output_col) in ref_columns.iter().zip(output_columns.clone()) {
+                print!("\u{001b}[37m");
+                if output_col.contains("PPU") || output_col.contains("CYC") {
+                    continue;
+                }
                 if ref_col == output_col {
                     print!("\u{001b}[32m")
                 } else {
@@ -2618,15 +2511,24 @@ fn main() {
                     print!("\u{001b}[31m");
                     matched = false;
                 }
-
                 print!("{} ", output_col);
             }
             println!();
             if !matched {
                 println!("\u{001b}[37m{} ", ref_columns_1);
+                writeln!(nestest_output, "#{}", &res);
+                writeln!(nestest_output, ">{}", ref_columns_1);
+                count += 1;
+                if count > 10 {
+                    return;
+                }
                 // break;
+                // return;
             }
+            // sleep(Duration::from_millis(10));
         }
+
+        let addr = mirror_addr;
 
         registers.pc += 1; // READ instruction
 
@@ -2640,12 +2542,13 @@ fn main() {
                 registers.pc += num_operands;
             }
             Instructions::LDA => {
-                let addr = if addressing_mode == AddressingMode::Absolute {
-                    memory.memory[addr as usize] as u16
+                let data = if addressing_mode == AddressingMode::Immediate {
+                    addr as u8
                 } else {
-                    addr
+                    memory.memory[addr as usize]
                 };
-                lda(&mut registers, addr as u16);
+
+                lda(&mut registers, data);
                 registers.pc += num_operands;
             }
             Instructions::BRK => {
@@ -2654,11 +2557,6 @@ fn main() {
                 // TODO: Check if need to advance pc by 1, but probs not
             }
             Instructions::STA => {
-                let addr = if addressing_mode == AddressingMode::Absolute {
-                    memory.memory[addr as usize] as u16
-                } else {
-                    addr
-                };
                 sta(&mut registers, &mut memory, addr);
                 registers.pc += num_operands;
             }
@@ -2667,12 +2565,12 @@ fn main() {
                 registers.pc += num_operands;
             }
             Instructions::LDX => {
-                let addr = if addressing_mode == AddressingMode::Absolute {
-                    memory.memory[addr as usize] as u16
+                let data = if addressing_mode == AddressingMode::Immediate {
+                    addr as u8
                 } else {
-                    addr as u16
+                    memory.memory[addr as usize]
                 };
-                ldx(&mut registers, addr);
+                ldx(&mut registers, data.into());
                 registers.pc += num_operands;
             }
             Instructions::TXS => {

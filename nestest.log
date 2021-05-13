@@ -1,0 +1,22 @@
+#CFA2  A5 00     LDA $00 = FB                    A:AA X:55 Y:69 P:27 SP:FB PPU CYC
+>CFA2  A5 00     LDA $00 = 00                    A:AA X:55 Y:69 P:27 SP:FB PPU: 21,267 CYC:2476
+#CFA4  8D FF 07  STA $07FF = FB                  A:FB X:55 Y:69 P:A5 SP:FB PPU CYC
+>CFA4  8D FF 07  STA $07FF = FB                  A:00 X:55 Y:69 P:27 SP:FB PPU: 21,276 CYC:2479
+#CFA7  A9 00     LDA #$00                        A:FB X:55 Y:69 P:A5 SP:FB PPU CYC
+>CFA7  A9 00     LDA #$00                        A:00 X:55 Y:69 P:27 SP:FB PPU: 21,288 CYC:2483
+#CFC3  85 00     STA $00 = FB                    A:04 X:55 Y:69 P:25 SP:FB PPU CYC
+>CFC3  85 00     STA $00 = 00                    A:04 X:55 Y:69 P:25 SP:FB PPU: 22, 52 CYC:2518
+#CFCC  8D 00 03  STA $0300 = 0A                  A:5B X:55 Y:69 P:25 SP:FB PPU CYC
+>CFCC  8D 00 03  STA $0300 = 00                  A:5B X:55 Y:69 P:25 SP:FB PPU: 22, 85 CYC:2529
+#CFD1  8D 03 03  STA $0303 = 0A                  A:5C X:55 Y:69 P:25 SP:FB PPU CYC
+>CFD1  8D 03 03  STA $0303 = 00                  A:5C X:55 Y:69 P:25 SP:FB PPU: 22,103 CYC:2535
+#CFD6  8D 00 04  STA $0400 = C2                  A:5D X:55 Y:69 P:25 SP:FB PPU CYC
+>CFD6  8D 00 04  STA $0400 = 00                  A:5D X:55 Y:69 P:25 SP:FB PPU: 22,121 CYC:2541
+#D03D  AD FF 07  LDA $07FF = 04                  A:AD X:00 Y:69 P:27 SP:FB PPU CYC
+>D03D  AD FF 07  LDA $07FF = 00                  A:AD X:00 Y:69 P:27 SP:FB PPU: 23,206 CYC:2683
+#D040  85 00     STA $00 = 04                    A:04 X:00 Y:69 P:25 SP:FB PPU CYC
+>D040  85 00     STA $00 = 04                    A:00 X:00 Y:69 P:27 SP:FB PPU: 23,218 CYC:2687
+#D042  A9 00     LDA #$00                        A:04 X:00 Y:69 P:25 SP:FB PPU CYC
+>D042  A9 00     LDA #$00                        A:00 X:00 Y:69 P:27 SP:FB PPU: 23,227 CYC:2690
+#D055  20 C0 F7  JSR $F7C0                       A:55 X:00 Y:5A P:64 SP:FB PPU CYC
+>D055  20 C0 F7  JSR $F7C0                       A:FF X:00 Y:5A P:E4 SP:FB PPU: 24, 24 CYC:2736
