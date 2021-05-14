@@ -199,13 +199,13 @@ mod rp2a03 {
         pub fn match_instruction(opcode: u8) -> (Instructions, AddressingMode) {
             match opcode {
                 // LDA
+                0xA9 => (Instructions::LDA, AddressingMode::Immediate),
+                0xA5 => (Instructions::LDA, AddressingMode::ZeroPage),
+                0xB5 => (Instructions::LDA, AddressingMode::ZeroPageIndexedWithX),
                 0xAD => (Instructions::LDA, AddressingMode::Absolute),
                 0xBD => (Instructions::LDA, AddressingMode::AbsoluteIndirectWithX),
                 0xB9 => (Instructions::LDA, AddressingMode::AbsoluteIndirectWithY),
-                0xA9 => (Instructions::LDA, AddressingMode::Immediate),
-                0xA5 => (Instructions::LDA, AddressingMode::ZeroPage),
                 0xA1 => (Instructions::LDA, AddressingMode::ZeroPageIndexedIndirect),
-                0xB5 => (Instructions::LDA, AddressingMode::ZeroPageIndexedWithX),
                 0xB1 => (
                     Instructions::LDA,
                     AddressingMode::ZeroPageIndirectIndexedWithY,
@@ -246,8 +246,11 @@ mod rp2a03 {
                 0x2D => (Instructions::AND, AddressingMode::Absolute),
                 0x3D => (Instructions::AND, AddressingMode::AbsoluteIndirectWithX),
                 0x39 => (Instructions::AND, AddressingMode::AbsoluteIndirectWithY),
-                0x21 => (Instructions::AND, AddressingMode::AbsoluteIndirectWithX),
-                0x31 => (Instructions::AND, AddressingMode::AbsoluteIndirectWithY),
+                0x21 => (Instructions::AND, AddressingMode::ZeroPageIndexedIndirect),
+                0x31 => (
+                    Instructions::AND,
+                    AddressingMode::ZeroPageIndirectIndexedWithY,
+                ),
                 // BEQ
                 0xF0 => (Instructions::BEQ, AddressingMode::Relative),
                 // CPX
@@ -669,7 +672,7 @@ mod rp2a03 {
             assert_eq!(registers.pc, 0x42);
         }
 
-        pub fn cpx(registers: &mut Registers, value: u16) {
+        pub fn cpx(registers: &mut Registers, value: u8) {
             registers.set_flag(StatusFlag::C, false);
             registers.set_flag(StatusFlag::Z, false);
 
@@ -827,7 +830,7 @@ mod rp2a03 {
             assert_eq!(registers.y, 0x99);
         }
 
-        pub fn cpy(registers: &mut Registers, value: u16) {
+        pub fn cpy(registers: &mut Registers, value: u8) {
             registers.set_flag(StatusFlag::C, false);
             registers.set_flag(StatusFlag::Z, false);
 
@@ -1210,7 +1213,7 @@ mod rp2a03 {
             assert_eq!(registers.status & 0b10000000, 0b10000000);
         }
 
-        pub fn asl(registers: &mut Registers, memory: &mut Memory, addr: u16, val: u16) {
+        pub fn asl(registers: &mut Registers, memory: &mut Memory, addr: u16, val: u8) {
             let mut m = val;
             let c = (m & 0b10000000) as u8 == 0b10000000;
 
@@ -1282,7 +1285,7 @@ mod rp2a03 {
             assert_eq!(registers.pc, 0xCECE);
         }
 
-        pub fn sbc(registers: &mut Registers, addr: u16) {
+        pub fn sbc(registers: &mut Registers, value: u8) {
             let carry = if registers.is_flag_set(StatusFlag::C) {
                 0
             } else {
@@ -1290,7 +1293,7 @@ mod rp2a03 {
             } as u8;
 
             let a = registers.a;
-            let m = addr as u8;
+            let m = value;
 
             let temp = (a as i16 - m as i16 - carry as i16) as u16;
 
@@ -1336,7 +1339,7 @@ mod rp2a03 {
             assert_eq!(registers.status, 0x8)
         }
 
-        pub fn cmp(registers: &mut Registers, value: u16) {
+        pub fn cmp(registers: &mut Registers, value: u8) {
             registers.set_flag(StatusFlag::N, false);
             registers.set_flag(StatusFlag::C, false);
             registers.set_flag(StatusFlag::Z, false);
@@ -1471,7 +1474,6 @@ mod rp2a03 {
 
         pub fn ora(registers: &mut Registers, value: u8) {
             registers.a |= value;
-
             registers.set_flag(StatusFlag::Z, registers.a == 0);
             registers.set_flag(StatusFlag::N, registers.a >= 0x80);
         }
@@ -1507,8 +1509,8 @@ mod rp2a03 {
             assert_eq!(registers.is_flag_set(StatusFlag::V), false);
         }
 
-        pub fn eor(registers: &mut Registers, addr: u16) {
-            registers.a ^= addr as u8;
+        pub fn eor(registers: &mut Registers, value: u8) {
+            registers.a ^= value;
 
             registers.set_flag(StatusFlag::Z, registers.a == 0);
             registers.set_flag(StatusFlag::N, registers.a >= 0x80);
@@ -1531,7 +1533,7 @@ mod rp2a03 {
             assert_eq!(registers.a, 0xF5);
         }
 
-        pub fn adc(registers: &mut Registers, addr: u16) {
+        pub fn adc(registers: &mut Registers, value: u8) {
             // ~CARRY
             let carry = if registers.is_flag_set(StatusFlag::C) {
                 1
@@ -1553,7 +1555,7 @@ mod rp2a03 {
             // };
 
             let a = registers.a;
-            let m = addr as u8;
+            let m = value;
 
             let temp = a as u16 + m as u16 + carry as u16;
 
@@ -1872,9 +1874,9 @@ mod rp2a03 {
             assert_eq!(registers.a, 0x82);
         }
 
-        pub fn rol(registers: &mut Registers, memory: &mut Memory, addr: u16) {
-            let m = memory.memory[addr as usize];
-            let bit7 = m as u8 & 0b1 == 0b1;
+        pub fn rol(registers: &mut Registers, memory: &mut Memory, addr: u16, value: u8) {
+            let m = value;
+            let bit7 = m as u8 & 0b10000000 == 0b10000000;
             let mut m = m << 1;
             let carry = registers.is_flag_set(StatusFlag::C);
             m |= if carry { 1 } else { 0 };
@@ -1902,7 +1904,7 @@ mod rp2a03 {
             let mut memory = Memory::new();
 
             memory.memory[0x42] = 0x4;
-            rol(&mut registers, &mut memory, 0x42);
+            rol(&mut registers, &mut memory, 0x42, 0x4);
             assert_eq!(memory.memory[0x42], 0x8);
 
             registers.a = 0x4;
@@ -1917,8 +1919,8 @@ mod rp2a03 {
 
         pub fn dec(registers: &mut Registers, memory: &mut Memory, addr: u16) {
             memory.memory[addr as usize] = memory.memory[addr as usize].wrapping_sub(1);
-            registers.set_flag(StatusFlag::Z, registers.a == 0);
-            registers.set_flag(StatusFlag::N, registers.a >= 0x80);
+            registers.set_flag(StatusFlag::Z, memory.memory[addr as usize] == 0);
+            registers.set_flag(StatusFlag::N, memory.memory[addr as usize] >= 0x80);
         }
 
         #[test]
@@ -2178,12 +2180,15 @@ mod nes_rom {
 
         use super::*;
 
-        pub(crate) fn load_rom(memory: &mut Memory, rom: &[u8], mapper: Mapper) {
-            match mapper {
+        pub(crate) fn load_rom(memory: &mut Memory, rom: &[u8], nesfile: &NESFile) {
+            match nesfile.mapper {
                 Mapper::Nrom => {
-                    memory.memory[PRG_ROM_START..PRG_ROM_START + 16384]
-                        .copy_from_slice(&rom[16..16 + 16384]);
-                    memory.memory[0xC000..=0xFFFF].copy_from_slice(&rom[16..16 + 16384]);
+                    memory.memory[0x8000..0x8000 + 16384].copy_from_slice(&rom[16..16 + 16384]);
+
+                    memory.memory[0xC000..=0xFFFF].copy_from_slice(
+                        &rom[(16 + 16384 * (nesfile.num_prgrom - 1) as usize)
+                            ..16 + 16384 * (nesfile.num_prgrom) as usize],
+                    );
                 }
                 Mapper::Unknown => panic!("Unknown mapper"),
             }
@@ -2230,6 +2235,8 @@ mod nes_rom {
             let nes = &rom[0..4];
 
             println!("{}{}{}", nes[0] as char, nes[1] as char, nes[2] as char);
+
+            // NOTE: THis is ines only and not nes2
 
             let num_prgrom = rom[4];
             let num_chrrom = rom[5];
@@ -2281,6 +2288,8 @@ mod nes_rom {
 
             let format = NESFile::get_file_format(rom);
 
+            println!("Format {:?}", format);
+
             Self {
                 mapper: mapper.into(),
                 num_prgrom,
@@ -2308,7 +2317,6 @@ mod nes_rom {
         }
     }
 }
-
 fn main() {
     println!("Nessy 🐉!");
 
@@ -2346,7 +2354,7 @@ fn main() {
     let mut nestest_output = File::create("nestest.log").unwrap();
 
     // Load up memory
-    nes_rom::mappers::load_rom(&mut memory, rom, nesfile.mapper);
+    nes_rom::mappers::load_rom(&mut memory, rom, &nesfile);
 
     // let bank_seven = 16 + 7 * 16384;
 
@@ -2435,11 +2443,15 @@ fn main() {
 
         // RAM MIRORRING AND
         let mirror_addr = if addr < 0x2000 {
+            // System memory is mirrored
             addr % 0x0800
         } else if (0x2000..0x4000).contains(&addr) {
-            addr % 0x2008 + 0x2000
-        } else if nesfile.num_prgrom == 1 && addr >= 0x8000 && addr <= 0xBFFF {
-            addr % 0xBFFF + 0x8000
+            // PPU I/O rgisters are mirrored
+            if addr > 0x007 {
+                addr % 0x2008 + 0x2000
+            } else {
+                addr
+            }
         } else {
             addr
         };
@@ -2470,7 +2482,6 @@ fn main() {
                 match (addressing_mode.clone(), num_operands) {
                     (AddressingMode::Relative, _) => format!("${:04X}", registers.pc + addr + 2),
                     (AddressingMode::Absolute, _)
-                    | (AddressingMode::AbsoluteIndirect, _)
                     | (AddressingMode::AbsoluteIndirectWithX, _)
                     | (AddressingMode::AbsoluteIndirectWithY, _) => match instruction {
                         Instructions::JMP
@@ -2489,13 +2500,7 @@ fn main() {
                     },
                     (AddressingMode::Immediate, _) => format!("#${:02X}", addr),
                     (AddressingMode::Accumulator, _) => "A".to_string(),
-                    (AddressingMode::ZeroPageIndirectIndexedWithY, _) => format!(
-                        "(${:02X},X) @ {:02X} = {:04X} = {:02X}",
-                        ops.0,
-                        ops.0.wrapping_add(registers.x),
-                        addr,
-                        memory.memory[mirror_addr as usize]
-                    ),
+
                     (AddressingMode::ZeroPageIndexedIndirect, _) => format!(
                         "(${:02X},X) @ {:02X} = {:04X} = {:02X}",
                         ops.0,
@@ -2503,11 +2508,22 @@ fn main() {
                         addr,
                         memory.memory[mirror_addr as usize]
                     ),
+                    (AddressingMode::ZeroPageIndirectIndexedWithY, _) => format!(
+                        "(${:02X}),Y = {:04X} @ {:04X} = {:02X}",
+                        ops.0,
+                        address_from_bytes(
+                            memory.memory[ops.0 as usize],
+                            memory.memory[ops.0.wrapping_add(1) as usize]
+                        ),
+                        addr,
+                        memory.memory[mirror_addr as usize]
+                    ),
+                    (AddressingMode::AbsoluteIndirect, _) =>
+                        format!("(${:04X}) = {:04X}", address_from_bytes(ops.0, ops.1), addr),
                     (AddressingMode::ZeroPage, _) => format!(
                         "${:02X} = {:02X}",
                         addr, memory.memory[mirror_addr as usize]
                     ),
-
                     _ => "".to_string(),
                 }
             );
@@ -2567,7 +2583,7 @@ fn main() {
                 writeln!(nestest_output, "#{}", &res);
                 writeln!(nestest_output, ">{}", ref_columns_1);
                 count += 1;
-                if count > 0 {
+                if count > 10 {
                     return;
                 }
                 // break;
@@ -2578,23 +2594,7 @@ fn main() {
 
         // println!("addr {:X} mirror addr {:X}", addr, mirror_addr);
 
-        if addr == 0x07FF {
-            println!("0x7FF TOTO");
-            return;
-        }
-
-        if memory.memory[mirror_addr as usize] == 86 {
-            println!("TOTO");
-            return;
-            // return;
-        }
-
-        if memory.memory[0x0] != 0 {
-            println!("TOTO");
-            return;
-            // return;
-        }
-
+        let j_addr = addr;
         let addr = mirror_addr;
 
         registers.pc += 1; // READ instruction
@@ -2648,7 +2648,12 @@ fn main() {
                 if addressing_mode == AddressingMode::Accumulator {
                     and_acc(&mut registers);
                 } else {
-                    and(&mut registers, addr as u8);
+                    let data = if addressing_mode == AddressingMode::Immediate {
+                        addr as u8
+                    } else {
+                        memory.memory[addr as usize]
+                    };
+                    and(&mut registers, data);
                 }
 
                 registers.pc += num_operands;
@@ -2659,7 +2664,12 @@ fn main() {
                 }
             }
             Instructions::CPX => {
-                cpx(&mut registers, addr);
+                let data = if addressing_mode == AddressingMode::Immediate {
+                    addr as u8
+                } else {
+                    memory.memory[addr as usize]
+                };
+                cpx(&mut registers, data);
                 registers.pc += num_operands;
             }
             Instructions::DEY => {
@@ -2680,7 +2690,12 @@ fn main() {
                 registers.pc += num_operands;
             }
             Instructions::CPY => {
-                cpy(&mut registers, addr);
+                let data = if addressing_mode == AddressingMode::Immediate {
+                    addr as u8
+                } else {
+                    memory.memory[addr as usize]
+                };
+                cpy(&mut registers, data);
                 registers.pc += num_operands;
             }
             Instructions::BNE => {
@@ -2692,14 +2707,14 @@ fn main() {
                 rts(&mut registers, &mut memory);
             }
             Instructions::JMP => {
-                jmp(&mut registers, addr);
+                jmp(&mut registers, j_addr);
             }
             Instructions::STX => {
                 stx(&mut registers, &mut memory, addr);
                 registers.pc += num_operands;
             }
             Instructions::JSR => {
-                jsr(&mut registers, &mut memory, addr);
+                jsr(&mut registers, &mut memory, j_addr);
             }
             Instructions::NOP => {
                 nop();
@@ -2742,14 +2757,20 @@ fn main() {
                 }
             }
             Instructions::LDY => {
-                ldy(&mut registers, addr as u8);
+                let data = if addressing_mode == AddressingMode::Immediate {
+                    addr as u8
+                } else {
+                    memory.memory[addr as usize]
+                };
+                ldy(&mut registers, data);
                 registers.pc += num_operands;
             }
             Instructions::ASL => {
                 if addressing_mode == AddressingMode::Accumulator {
                     asl_acc(&mut registers);
                 } else {
-                    asl(&mut registers, &mut memory, bytes, addr);
+                    let data = memory.memory[addr as usize];
+                    asl(&mut registers, &mut memory, addr, data);
                 }
 
                 registers.pc += num_operands;
@@ -2759,7 +2780,12 @@ fn main() {
                 registers.pc += num_operands;
             }
             Instructions::SBC => {
-                sbc(&mut registers, addr);
+                let data = if addressing_mode == AddressingMode::Immediate {
+                    addr as u8
+                } else {
+                    memory.memory[addr as usize]
+                };
+                sbc(&mut registers, data);
                 registers.pc += num_operands;
             }
             Instructions::SED => {
@@ -2767,7 +2793,12 @@ fn main() {
                 registers.pc += num_operands;
             }
             Instructions::CMP => {
-                cmp(&mut registers, addr);
+                let data = if addressing_mode == AddressingMode::Immediate {
+                    addr as u8
+                } else {
+                    memory.memory[addr as usize]
+                };
+                cmp(&mut registers, data);
                 registers.pc += num_operands;
             }
             Instructions::PHA => {
@@ -2784,7 +2815,12 @@ fn main() {
                 }
             }
             Instructions::ORA => {
-                ora(&mut registers, addr as u8);
+                let data = if addressing_mode == AddressingMode::Immediate {
+                    addr as u8
+                } else {
+                    memory.memory[addr as usize]
+                };
+                ora(&mut registers, data);
                 registers.pc += num_operands;
             }
             Instructions::CLV => {
@@ -2792,11 +2828,21 @@ fn main() {
                 registers.pc += num_operands;
             }
             Instructions::EOR => {
-                eor(&mut registers, addr);
+                let data = if addressing_mode == AddressingMode::Immediate {
+                    addr as u8
+                } else {
+                    memory.memory[addr as usize]
+                };
+                eor(&mut registers, data);
                 registers.pc += num_operands;
             }
             Instructions::ADC => {
-                adc(&mut registers, addr);
+                let data = if addressing_mode == AddressingMode::Immediate {
+                    addr as u8
+                } else {
+                    memory.memory[addr as usize]
+                };
+                adc(&mut registers, data);
                 registers.pc += num_operands;
             }
             Instructions::STY => {
@@ -2851,7 +2897,8 @@ fn main() {
                 if addressing_mode == AddressingMode::Accumulator {
                     rol_acc(&mut registers);
                 } else {
-                    rol(&mut registers, &mut memory, addr);
+                    let data = memory.memory[addr as usize];
+                    rol(&mut registers, &mut memory, addr, data);
                 }
                 registers.pc += num_operands;
             }

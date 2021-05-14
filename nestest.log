@@ -1,0 +1,22 @@
+#DBB5  6C FF 02  JMP ($02FF) = A900              A:60 X:07 Y:00 P:65 SP:F9 PPU CYC
+>DBB5  6C FF 02  JMP ($02FF) = 0300              A:60 X:07 Y:00 P:65 SP:F9 PPU: 84,201 CYC:9615
+#A900  00        BRK                             A:60 X:07 Y:00 P:65 SP:F9 PPU CYC
+>0300  A9 AA     LDA #$AA                        A:60 X:07 Y:00 P:65 SP:F9 PPU: 84,216 CYC:9620
+#C5F4  40        RTI                             A:60 X:07 Y:00 P:75 SP:F6 PPU CYC
+>0302  60        RTS                             A:AA X:07 Y:00 P:E5 SP:F9 PPU: 84,222 CYC:9622
+#A902  EA        NOP                             A:60 X:07 Y:00 P:75 SP:F9 PPU CYC
+>DBAE  C9 AA     CMP #$AA                        A:AA X:07 Y:00 P:E5 SP:FB PPU: 84,240 CYC:9628
+#A903  EA        NOP                             A:60 X:07 Y:00 P:75 SP:F9 PPU CYC
+>DBB0  F0 02     BEQ $DBB4                       A:AA X:07 Y:00 P:67 SP:FB PPU: 84,246 CYC:9630
+#A904  EA        NOP                             A:60 X:07 Y:00 P:75 SP:F9 PPU CYC
+>DBB4  60        RTS                             A:AA X:07 Y:00 P:67 SP:FB PPU: 84,255 CYC:9633
+#A905  20 76 F9  JSR $F976                       A:60 X:07 Y:00 P:75 SP:F9 PPU CYC
+>C626  20 4A DF  JSR $DF4A                       A:AA X:07 Y:00 P:67 SP:FD PPU: 84,273 CYC:9639
+#F976  90 05     BCC $F97D                       A:60 X:07 Y:00 P:75 SP:F7 PPU CYC
+>DF4A  A9 89     LDA #$89                        A:AA X:07 Y:00 P:67 SP:FB PPU: 84,291 CYC:9645
+#F978  C9 7F     CMP #$7F                        A:60 X:07 Y:00 P:75 SP:F7 PPU CYC
+>DF4C  8D 00 03  STA $0300 = A9                  A:89 X:07 Y:00 P:E5 SP:FB PPU: 84,297 CYC:9647
+#F97A  D0 01     BNE $F97D                       A:60 X:07 Y:00 P:F4 SP:F7 PPU CYC
+>DF4F  A9 A3     LDA #$A3                        A:89 X:07 Y:00 P:E5 SP:FB PPU: 84,309 CYC:9651
+#F97D  84 00     STY $00 = 00                    A:60 X:07 Y:00 P:F4 SP:F7 PPU CYC
+>DF51  85 33     STA $33 = 00                    A:A3 X:07 Y:00 P:E5 SP:FB PPU: 84,315 CYC:9653
