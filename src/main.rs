@@ -78,7 +78,7 @@ mod rp2a03 {
             let mut memory = Vec::new();
             memory.resize_with(0x10000, || 0);
             let mut ppu = Vec::new();
-            ppu.resize_with(0x3F21, || 0);
+            ppu.resize_with(0x4000, || 0);
 
             Self {
                 memory,
@@ -481,15 +481,20 @@ mod rp2a03 {
         }
 
         pub fn brk(registers: &mut Registers, memory: &mut Memory) {
-            registers.pc += 2;
+            registers.pc += 1;
             memory.stack_push(((registers.pc >> 8) & 0xFF) as u8);
             memory.stack_push((registers.pc & 0xFF) as u8);
-            registers.status |= 0b00010100; // Enable B and I registers
+
+            registers.set_flag(StatusFlag::B, true);
+            registers.set_flag(StatusFlag::Unused, true);
             memory.stack_push(registers.status);
+            registers.set_flag(StatusFlag::I, true);
             registers.pc = address_from_bytes(
                 memory.memory[BREAK_VECTOR_ADDDRESS as usize],
                 memory.memory[(BREAK_VECTOR_ADDDRESS + 1) as usize],
             );
+            // registers.set_flag(StatusFlag::B, false);
+            // registers.set_flag(StatusFlag::Unused, false);
         }
 
         #[test]
@@ -500,8 +505,8 @@ mod rp2a03 {
             memory.memory[(BREAK_VECTOR_ADDDRESS + 1) as usize] = 0x0;
             registers.pc += 1; // Simulate reading insruction
             brk(&mut registers, &mut memory);
-            assert_eq!(registers.status, 0b00010100);
-            assert_eq!(memory.memory[0x01FE], 3);
+            assert_eq!(registers.status, 0b00110100);
+            assert_eq!(memory.memory[0x01FE], 2);
             assert_eq!(memory.memory[0x01FF], 0);
             assert_eq!(registers.pc, 0x42);
         }
@@ -1074,8 +1079,10 @@ mod rp2a03 {
 
         pub fn php(registers: &mut Registers, memory: &mut Memory) {
             registers.set_flag(StatusFlag::B, true);
+            registers.set_flag(StatusFlag::Unused, true);
             memory.stack_push(registers.status);
             registers.set_flag(StatusFlag::B, false);
+            // registers.set_flag(StatusFlag::Unused, false);
         }
 
         #[test]
@@ -1183,16 +1190,8 @@ mod rp2a03 {
 
         pub fn ldy(registers: &mut Registers, operand: u8) {
             registers.y = operand;
-            if operand == 0 {
-                registers.set_flag(StatusFlag::Z, true);
-            } else {
-                registers.set_flag(StatusFlag::Z, false);
-            };
-            if operand >= 0x80 {
-                registers.set_flag(StatusFlag::N, true);
-            } else {
-                registers.set_flag(StatusFlag::N, false);
-            };
+            registers.set_flag(StatusFlag::Z, operand == 0);
+            registers.set_flag(StatusFlag::N, operand >= 0x80);
         }
 
         #[test]
@@ -1249,8 +1248,14 @@ mod rp2a03 {
             let pc_msb = memory.stack_pop();
             let pc = address_from_bytes(pc_lsb, pc_msb);
 
+            let old_registers = registers.clone();
+
             registers.status = status;
-            registers.set_flag(StatusFlag::Unused, true);
+            registers.set_flag(StatusFlag::B, old_registers.is_flag_set(StatusFlag::B));
+            registers.set_flag(
+                StatusFlag::Unused,
+                old_registers.is_flag_set(StatusFlag::Unused),
+            );
             registers.pc = pc;
         }
 
@@ -1264,7 +1269,8 @@ mod rp2a03 {
             memory.stack_push(0b10101010);
             registers.pc += 1; // Simulate reading insruction
             rti(&mut registers, &mut memory);
-            assert_eq!(registers.status, 0b10101010);
+
+            assert_eq!(registers.status, 0b10001010);
             assert_eq!(registers.pc, 0x2);
 
             memory.stack_push(0xCE);
@@ -1272,7 +1278,7 @@ mod rp2a03 {
             memory.stack_push(0x87);
             registers.pc += 1; // Simulate reading insruction
             rti(&mut registers, &mut memory);
-            assert_eq!(registers.status, 0xA7);
+            assert_eq!(registers.status, 0x87);
             assert_eq!(registers.pc, 0xCECE);
         }
 
@@ -1414,7 +1420,7 @@ mod rp2a03 {
             let old_registers = registers.clone();
             registers.status = memory.stack_pop();
 
-            registers.set_flag(StatusFlag::B, false);
+            registers.set_flag(StatusFlag::B, old_registers.is_flag_set(StatusFlag::B));
             registers.set_flag(
                 StatusFlag::Unused,
                 old_registers.is_flag_set(StatusFlag::Unused),
@@ -2135,6 +2141,7 @@ use std::{
     fmt::write,
     fs::{read_to_string, File},
     io::{BufRead, BufReader, Read, Write},
+    mem,
     thread::sleep,
     time::Duration,
 };
@@ -2361,14 +2368,43 @@ fn main() {
     }
 
     // POWER ON NES
-    registers.status = 0x24;
+
+    // CPU
+
+    if is_nestest {
+        registers.status = 0x24;
+    } else {
+        registers.status = 0x34;
+    }
 
     memory.stack_pointer = 0xFD; // Stack is on page 1 only so 0xFF is actually 0x01FF
+
+    // Memory
 
     memory.memory[0x4017] = 0x00; // Frame IRQ enabled
     memory.memory[0x4015] = 0x00; // All channels disabled
     memory.memory[0x4000..0x400F].copy_from_slice(&[0x0; 15]);
     memory.memory[0x4010..0x4013].copy_from_slice(&[0x0; 3]);
+
+    // Disable decimal mode
+    registers.set_flag(StatusFlag::D, false);
+
+    // PPU
+
+    // Set PPUCTRL
+    memory.memory[0x2000] = 0x0;
+    // Set PPUMASK
+    memory.memory[0x2001] = 0x0;
+    // PPUSTATUS
+    memory.memory[0x2000] = 0b10100000;
+    // OAMADDR
+    memory.memory[0x2003] = 0x0;
+    // PPUSCROLL
+    memory.memory[0x2005] = 0x0;
+    // PPUADDR
+    memory.memory[0x2006] = 0x0;
+    // PPUDATA
+    memory.memory[0x2007] = 0x0;
 
     let reference = File::open("nestest_reference.log").unwrap();
     let reference_buffered = BufReader::new(reference);
@@ -2394,7 +2430,14 @@ fn main() {
         )
         .unwrap_or(0);
 
-        let mirror_addr = if addr <= 0x01FFF { addr % 0x7FF } else { addr };
+        // RAM MIRORRING AND
+        let mirror_addr = if addr < 0x2000 {
+            addr % 0x0800
+        } else if (0x2000..0x4000).contains(&addr) {
+            addr % 0x2008 + 0x2000
+        } else {
+            addr
+        };
 
         // print_nestest_log(instruction, &registers, &memory, num_operands, addr, ops);
 
@@ -2519,13 +2562,32 @@ fn main() {
                 writeln!(nestest_output, "#{}", &res);
                 writeln!(nestest_output, ">{}", ref_columns_1);
                 count += 1;
-                if count > 10 {
+                if count > 0 {
                     return;
                 }
                 // break;
                 // return;
             }
             // sleep(Duration::from_millis(10));
+        }
+
+        println!("addr {:X} mirror addr {:X}", addr, mirror_addr);
+
+        if addr == 0x07FF {
+            println!("0x7FF TOTO");
+            return;
+        }
+
+        if memory.memory[mirror_addr as usize] == 86 {
+            println!("TOTO");
+            return;
+            // return;
+        }
+
+        if memory.memory[0x0] != 0 {
+            println!("TOTO");
+            return;
+            // return;
         }
 
         let addr = mirror_addr;
