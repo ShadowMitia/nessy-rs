@@ -1,2 +1,0 @@
-#CDAE  8E FF 07  STX $07FF = 86                  A:00 X:FB Y:99 P:A5 SP:FB PPU CYC
->CDAE  8E FF 07  STX $07FF = 00                  A:00 X:FB Y:99 P:A5 SP:FB PPU: 16, 85 CYC:1847

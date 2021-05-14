@@ -2180,7 +2180,7 @@ mod nes_rom {
 
         pub(crate) fn load_rom(memory: &mut Memory, rom: &[u8], mapper: Mapper) {
             match mapper {
-                Mapper::Nrom128 | Mapper::Nrom256 => {
+                Mapper::Nrom => {
                     memory.memory[PRG_ROM_START..PRG_ROM_START + 16384]
                         .copy_from_slice(&rom[16..16 + 16384]);
                     memory.memory[0xC000..=0xFFFF].copy_from_slice(&rom[16..16 + 16384]);
@@ -2191,16 +2191,14 @@ mod nes_rom {
         #[repr(u32)]
         #[derive(PartialEq, Clone, Copy)]
         pub enum Mapper {
-            Nrom128,
-            Nrom256,
+            Nrom,
             Unknown = u32::MAX,
         }
 
         impl From<u8> for Mapper {
             fn from(from: u8) -> Self {
                 match from {
-                    0 => Mapper::Nrom128,
-                    1 => Mapper::Nrom256,
+                    0 => Mapper::Nrom,
                     _ => Mapper::Unknown,
                 }
             }
@@ -2440,7 +2438,7 @@ fn main() {
             addr % 0x0800
         } else if (0x2000..0x4000).contains(&addr) {
             addr % 0x2008 + 0x2000
-        } else if nesfile.mapper == Mapper::Nrom128 && addr >= 0x8000 && addr <= 0xBFFF {
+        } else if nesfile.num_prgrom == 1 && addr >= 0x8000 && addr <= 0xBFFF {
             addr % 0xBFFF + 0x8000
         } else {
             addr
@@ -2578,7 +2576,7 @@ fn main() {
             // sleep(Duration::from_millis(10));
         }
 
-        println!("addr {:X} mirror addr {:X}", addr, mirror_addr);
+        // println!("addr {:X} mirror addr {:X}", addr, mirror_addr);
 
         if addr == 0x07FF {
             println!("0x7FF TOTO");
