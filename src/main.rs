@@ -2496,14 +2496,14 @@ fn main() {
                         ops.0,
                         ops.0.wrapping_add(registers.x),
                         addr,
-                        memory.memory[addr as usize]
+                        memory.memory[mirror_addr as usize]
                     ),
                     (AddressingMode::ZeroPageIndexedIndirect, _) => format!(
                         "(${:02X},X) @ {:02X} = {:04X} = {:02X}",
                         ops.0,
                         ops.0.wrapping_add(registers.x),
                         addr,
-                        memory.memory[addr as usize]
+                        memory.memory[mirror_addr as usize]
                     ),
                     (AddressingMode::ZeroPage, _) => format!(
                         "${:02X} = {:02X}",
