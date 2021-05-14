@@ -2148,6 +2148,8 @@ use std::{
 
 use rp2a03::{instructions::*, Registers, *};
 
+use crate::nes_rom::mappers::Mapper;
+
 fn address_from_bytes(low_byte: u8, high_byte: u8) -> u16 {
     ((high_byte as u16) << 8) | low_byte as u16
 }
@@ -2178,7 +2180,7 @@ mod nes_rom {
 
         pub(crate) fn load_rom(memory: &mut Memory, rom: &[u8], mapper: Mapper) {
             match mapper {
-                Mapper::Nrom => {
+                Mapper::Nrom128 | Mapper::Nrom256 => {
                     memory.memory[PRG_ROM_START..PRG_ROM_START + 16384]
                         .copy_from_slice(&rom[16..16 + 16384]);
                     memory.memory[0xC000..=0xFFFF].copy_from_slice(&rom[16..16 + 16384]);
@@ -2187,15 +2189,18 @@ mod nes_rom {
             }
         }
         #[repr(u32)]
+        #[derive(PartialEq, Clone, Copy)]
         pub enum Mapper {
-            Nrom = 0,
+            Nrom128,
+            Nrom256,
             Unknown = u32::MAX,
         }
 
         impl From<u8> for Mapper {
             fn from(from: u8) -> Self {
                 match from {
-                    0 => Mapper::Nrom,
+                    0 => Mapper::Nrom128,
+                    1 => Mapper::Nrom256,
                     _ => Mapper::Unknown,
                 }
             }
@@ -2435,6 +2440,8 @@ fn main() {
             addr % 0x0800
         } else if (0x2000..0x4000).contains(&addr) {
             addr % 0x2008 + 0x2000
+        } else if nesfile.mapper == Mapper::Nrom128 && addr >= 0x8000 && addr <= 0xBFFF {
+            addr % 0xBFFF + 0x8000
         } else {
             addr
         };
