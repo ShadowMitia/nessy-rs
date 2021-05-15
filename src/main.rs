@@ -2549,7 +2549,17 @@ fn main() {
             let addressing_stuff = format!(
                 "{:27}",
                 match (addressing_mode.clone(), num_operands) {
-                    (AddressingMode::Relative, _) => format!("${:04X}", registers.pc + addr + 2),
+                    (AddressingMode::Relative, _) => format!(
+                        "${:04X}",
+                        registers
+                            .pc
+                            .wrapping_add(if addr >= 0x80 {
+                                (addr as i32 - (1 << 8)) as u16
+                            } else {
+                                addr
+                            })
+                            .wrapping_add(2)
+                    ),
                     (AddressingMode::Absolute, _) => match instruction {
                         Instructions::JMP
                         | Instructions::BCS
@@ -2674,7 +2684,7 @@ fn main() {
                 writeln!(nestest_output, "#{}", &res);
                 writeln!(nestest_output, ">{}", ref_columns_1);
                 count += 1;
-                if count > 0 {
+                if count > 1 {
                     // return;
                 }
                 // break;
