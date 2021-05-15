@@ -409,13 +409,13 @@ mod rp2a03 {
                 0x46 => (Instructions::LSR, AddressingMode::ZeroPage),
                 0x56 => (Instructions::LSR, AddressingMode::ZeroPageIndexedWithX),
                 0x4E => (Instructions::LSR, AddressingMode::Absolute),
-                0x5E => (Instructions::LSR, AddressingMode::AbsoluteIndirect),
+                0x5E => (Instructions::LSR, AddressingMode::AbsoluteIndirectWithX),
                 // ROR
                 0x6A => (Instructions::ROR, AddressingMode::Accumulator),
                 0x66 => (Instructions::ROR, AddressingMode::ZeroPage),
                 0x76 => (Instructions::ROR, AddressingMode::ZeroPageIndexedWithX),
                 0x6E => (Instructions::ROR, AddressingMode::Absolute),
-                0x7E => (Instructions::ROR, AddressingMode::AbsoluteIndirect),
+                0x7E => (Instructions::ROR, AddressingMode::AbsoluteIndirectWithX),
                 // ROL
                 0x2A => (Instructions::ROL, AddressingMode::Accumulator),
                 0x26 => (Instructions::ROL, AddressingMode::ZeroPage),
