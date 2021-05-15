@@ -389,7 +389,7 @@ mod rp2a03 {
                 // STY
                 0x8C => (Instructions::STY, AddressingMode::Absolute),
                 0x84 => (Instructions::STY, AddressingMode::ZeroPage),
-                0x94 => (Instructions::STY, AddressingMode::ZeroPageIndexedIndirect),
+                0x94 => (Instructions::STY, AddressingMode::ZeroPageIndexedWithX),
                 // INY
                 0xC8 => (Instructions::INY, AddressingMode::Implied),
                 // INX
@@ -1975,11 +1975,13 @@ mod rp2a03 {
                     }
                 }
                 AddressingMode::AbsoluteIndirectWithX => {
-                    let addr = address_from_bytes(low_byte, high_byte) + registers.x as u16;
+                    let addr = address_from_bytes(low_byte, high_byte)
+                        .wrapping_add(registers.x.into()) as u16;
                     Some(addr as u16)
                 }
                 AddressingMode::AbsoluteIndirectWithY => {
-                    let addr = address_from_bytes(low_byte, high_byte) + registers.y as u16;
+                    let addr = address_from_bytes(low_byte, high_byte)
+                        .wrapping_add(registers.y.into()) as u16;
                     Some(addr as u16)
                 }
                 AddressingMode::ZeroPageIndexedWithX => {
@@ -2543,6 +2545,18 @@ fn main() {
                         "${:02X} = {:02X}",
                         addr, memory.memory[mirror_addr as usize]
                     ),
+                    (AddressingMode::ZeroPageIndexedWithX, _) => format!(
+                        "${:02X},X @ {:02X} = {:02X}",
+                        ops.0,
+                        ops.0.wrapping_add(registers.x),
+                        memory.memory[mirror_addr as usize]
+                    ),
+                    (AddressingMode::ZeroPageIndexedWithY, _) => format!(
+                        "${:02X},Y @ {:02X} = {:02X}",
+                        ops.0,
+                        ops.0.wrapping_add(registers.y),
+                        memory.memory[mirror_addr as usize]
+                    ),
                     _ => "".to_string(),
                 }
             );
@@ -2602,7 +2616,7 @@ fn main() {
                 writeln!(nestest_output, "#{}", &res);
                 writeln!(nestest_output, ">{}", ref_columns_1);
                 count += 1;
-                if count > 10 {
+                if count > 0 {
                     return;
                 }
                 // break;
