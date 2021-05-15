@@ -1959,11 +1959,20 @@ mod rp2a03 {
                 AddressingMode::Relative => Some(low_byte as u16),
                 AddressingMode::AbsoluteIndirect => {
                     let addr = address_from_bytes(low_byte, high_byte);
-                    let addr2 = addr + 1;
-                    Some(address_from_bytes(
-                        memory[addr as usize],
-                        memory[addr2 as usize],
-                    ))
+                    // NOTE: Handle hardware bug for JMP with absolute indirect
+                    if low_byte == 0xFF  {
+                        let addr2 = address_from_bytes(0x0, high_byte);
+                        Some(address_from_bytes(
+                            memory[addr as usize],
+                            memory[addr2 as usize],
+                        ))
+                    } else {
+                        let addr2 = addr + 1;
+                        Some(address_from_bytes(
+                            memory[addr as usize],
+                            memory[addr2 as usize],
+                        ))
+                    }
                 }
                 AddressingMode::AbsoluteIndirectWithX => {
                     let addr = address_from_bytes(low_byte, high_byte) + registers.x as u16;
