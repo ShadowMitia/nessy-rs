@@ -197,6 +197,7 @@ mod rp2a03 {
             SAX,
             DCP,
             ISB, // Sometimes designated ISC
+            SLO,
             Unknown,
         }
 
@@ -251,6 +252,7 @@ mod rp2a03 {
                     | 0xF7
                     | 0xFB
                     | 0xFF
+                    | 0x03
             )
         }
 
@@ -551,6 +553,8 @@ mod rp2a03 {
                 0xF7 => (Instructions::ISB, AddressingMode::ZeroPageIndexedWithX),
                 0xFB => (Instructions::ISB, AddressingMode::AbsoluteIndirectWithY),
                 0xFF => (Instructions::ISB, AddressingMode::AbsoluteIndirectWithX),
+                // SLO
+                0x03 => (Instructions::SLO, AddressingMode::AbsoluteIndirectWithX),
                 // UNKNOWN
                 _ => (Instructions::Unknown, AddressingMode::ZeroPageIndexedWithX),
             }
@@ -1671,7 +1675,7 @@ mod rp2a03 {
                 StatusFlag::V,
                 // NOTE: found here https://stackoverflow.com/questions/29193303/6502-emulation-proper-way-to-implement-adc-and-sbc
                 // NOTE: but unsure why this works and the previous and why I had issues with it...
-                !(a ^ value) & (a ^ temp as u8) & 0x80 == 0x80, 
+                !(a ^ value) & (a ^ temp as u8) & 0x80 == 0x80,
             );
             registers.set_flag(StatusFlag::Z, registers.a == 0);
             registers.set_flag(StatusFlag::N, registers.a >= 0x80);
@@ -3082,6 +3086,12 @@ fn main() {
             Instructions::ISB => {
                 inc(&mut registers, &mut memory, addr);
                 sbc(&mut registers, memory.memory[addr as usize]);
+                registers.pc += num_operands;
+            }
+            Instructions::SLO => {
+                let data = memory.memory[addr as usize];
+                asl(&mut registers, &mut memory, addr, data);
+                ora(&mut registers, memory.memory[addr as usize]);
                 registers.pc += num_operands;
             }
 
