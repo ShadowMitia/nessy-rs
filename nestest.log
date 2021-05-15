@@ -1,2 +1,2 @@
-#F2EE  43 45     Unknown $45,X @ 47 = 47             A:B3 X:02 Y:E9 P:E4 SP:FB PPU CYC
->F2EE  43 45    *SRE ($45,X) @ 47 = 0647 = A5    A:B3 X:02 Y:E9 P:E4 SP:FB PPU:204,228 CYC:23264
+#F55E  63 45     Unknown $45,X @ 47 = 47             A:B2 X:02 Y:01 P:E4 SP:FB PPU CYC
+>F55E  63 45    *RRA ($45,X) @ 47 = 0647 = A5    A:B2 X:02 Y:01 P:E4 SP:FB PPU:219,102 CYC:24927

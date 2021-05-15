@@ -199,6 +199,7 @@ mod rp2a03 {
             ISB, // Sometimes designated ISC
             SLO,
             RLA,
+            SRE,
             Unknown,
         }
 
@@ -267,6 +268,13 @@ mod rp2a03 {
                     | 0x3B
                     | 0x23
                     | 0x33
+                    | 0x47
+                    | 0x57
+                    | 0x4F
+                    | 0x5F
+                    | 0x5B
+                    | 0x43
+                    | 0x53
             )
         }
 
@@ -589,6 +597,17 @@ mod rp2a03 {
                     Instructions::RLA,
                     AddressingMode::ZeroPageIndirectIndexedWithY,
                 ),
+                // SRE
+                0x47 => (Instructions::SRE, AddressingMode::ZeroPage),
+                0x57 => (Instructions::SRE, AddressingMode::ZeroPageIndexedWithX),
+                0x4F => (Instructions::SRE, AddressingMode::Absolute),
+                0x5F => (Instructions::SRE, AddressingMode::AbsoluteIndirectWithX),
+                0x5B => (Instructions::SRE, AddressingMode::AbsoluteIndirectWithY),
+                0x43 => (Instructions::SRE, AddressingMode::ZeroPageIndexedIndirect),
+                0x53 => (
+                    Instructions::SRE,
+                    AddressingMode::ZeroPageIndirectIndexedWithY,
+                ),
                 // UNKNOWN
                 _ => (Instructions::Unknown, AddressingMode::ZeroPageIndexedWithX),
             }
@@ -732,7 +751,6 @@ mod rp2a03 {
         #[test]
         fn ldx_test() {
             let mut registers = Registers::new();
-            let mut memory = Memory::new();
 
             registers.pc += 1; // Simulate reading insruction
             ldx(&mut registers, 0x42);
@@ -3133,6 +3151,12 @@ fn main() {
                 let data = memory.memory[addr as usize];
                 rol(&mut registers, &mut memory, addr, data);
                 and(&mut registers, memory.memory[addr as usize]);
+                registers.pc += num_operands;
+            }
+
+            Instructions::SRE => {
+                lsr(&mut registers, &mut memory, addr);
+                eor(&mut registers, memory.memory[addr as usize]);
                 registers.pc += num_operands;
             }
 
