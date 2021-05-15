@@ -6,7 +6,7 @@ mod rp2a03 {
     a is 8-bit accumulator register
     x is 8-bit X index register
     y is 8-bit Y index register
-     is a 8-bit stack pointer, hardwired to memory page $01
+    s is a 8-bit stack pointer, hardwired to memory page $01
     pc is a 16-bit program counter
     status hold processore flag bits (7 flags)
     */
@@ -129,13 +129,11 @@ mod rp2a03 {
     }
 
     pub mod instructions {
-        use std::{mem, ops::Add};
-
-        use crate::{address_from_bytes, BREAK_VECTOR_ADDDRESS, STACK_ADDRESS};
-
         use super::*;
+        use crate::{address_from_bytes, BREAK_VECTOR_ADDDRESS};
 
         #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+        #[allow(clippy::upper_case_acronyms)]
         pub enum Instructions {
             SEI,
             CLD,
@@ -2333,28 +2331,18 @@ mod rp2a03 {
 }
 
 use std::{
-    fmt::write,
-    fs::{read_to_string, File},
+    fs::File,
     io::{BufRead, BufReader, Read, Write},
-    mem,
-    thread::sleep,
-    time::Duration,
 };
 
 use rp2a03::{instructions::*, Registers, *};
 
-use crate::nes_rom::mappers::Mapper;
+use crate::nes_rom::RomFile;
 
 fn address_from_bytes(low_byte: u8, high_byte: u8) -> u16 {
     ((high_byte as u16) << 8) | low_byte as u16
 }
 
-const ZEROPAGE_ADDRESS: u32 = 0x0;
-const STACK_ADDRESS: u32 = 0x0100;
-const RAM_ADDRESS: u32 = 0x0200;
-const EXPANSION_ROM_ADDRESS: u32 = 0x4020;
-const SRAM_ADDRESS: u32 = 0x6000;
-const PRGROM_ADDRESS: u32 = 0x8000;
 const NMI_VECTOR_ADDRESS: u32 = 0xFFFA;
 const RESET_VECTOR_ADDRESS: u32 = 0xFFFC;
 const BREAK_VECTOR_ADDDRESS: u32 = 0xFFFE;
@@ -2367,23 +2355,29 @@ fn get_operands(registers: &Registers, memory: &Memory) -> (u8, u8) {
 
 mod nes_rom {
 
+    use self::mappers::Mapper;
+
     use super::*;
 
     pub mod mappers {
 
         use super::*;
 
-        pub(crate) fn load_rom(memory: &mut Memory, rom: &[u8], nesfile: &NESFile) {
-            match nesfile.mapper {
-                Mapper::Nrom => {
-                    memory.memory[0x8000..0x8000 + 16384].copy_from_slice(&rom[16..16 + 16384]);
+        pub(crate) fn load_rom(memory: &mut Memory, nesfile: &RomFile) {
+            match nesfile {
+                RomFile::Ines(nesfile, data) => match nesfile.mapper {
+                    Mapper::Nrom => {
+                        memory.memory[0x8000..0x8000 + 16384]
+                            .copy_from_slice(&data[16..16 + 16384]);
 
-                    memory.memory[0xC000..=0xFFFF].copy_from_slice(
-                        &rom[(16 + 16384 * (nesfile.num_prgrom - 1) as usize)
-                            ..16 + 16384 * (nesfile.num_prgrom) as usize],
-                    );
-                }
-                Mapper::Unknown => panic!("Unknown mapper"),
+                        memory.memory[0xC000..=0xFFFF].copy_from_slice(
+                            &data[(16 + 16384 * (nesfile.num_prgrom - 1) as usize)
+                                ..16 + 16384 * (nesfile.num_prgrom) as usize],
+                        );
+                    }
+                    Mapper::Unknown => panic!("Unknown mapper"),
+                },
+                _ => unreachable!(),
             }
         }
         #[repr(u32)]
@@ -2403,88 +2397,120 @@ mod nes_rom {
         }
     }
 
-    struct Ines2 {}
+    pub enum RomFile {
+        Ines(Ines, Vec<u8>),
+        Ines2(Ines2, Vec<u8>),
+    }
 
-    #[derive(Debug)]
+    pub struct Ines2 {}
+
+    pub struct Ines {
+        num_prgrom: u8,
+        num_chrrom: u8,
+        mirroring: bool,
+        persistent_memory: bool,
+        has_trainer: bool,
+        four_screen_vram: u8,
+        mapper_lsb: u8,
+        vs: bool,
+        playchoice: bool,
+        mapper_msb: u8,
+        prgram_size: u8,
+        tv_system: bool,
+
+        tv_system2: u8,
+        has_prg_ram: bool,
+        has_bus_conflict: bool,
+        padding: Vec<u8>,
+        mapper: Mapper,
+    }
+    #[derive(Debug, PartialEq)]
     pub enum SupportedFormat {
-        ines2,
         ines,
         unsupported,
     }
 
-    pub struct NESFile {
-        pub mapper: mappers::Mapper,
-        pub num_prgrom: u8,
-        pub num_chrrom: u8,
-        pub data: Vec<u8>,
-    }
-
-    impl NESFile {
+    impl RomFile {
         pub fn new(rom: &[u8]) -> Self {
             let nes = &rom[0..4];
 
             println!("{}{}{}", nes[0] as char, nes[1] as char, nes[2] as char);
 
-            // NOTE: THis is ines only and not nes2
+            let format = RomFile::get_file_format(rom);
 
-            let num_prgrom = rom[4];
-            let num_chrrom = rom[5];
-            let flags6 = rom[6];
+            let file = if format == SupportedFormat::ines {
+                let num_prgrom = rom[4];
+                let num_chrrom = rom[5];
+                let flags6 = rom[6];
 
-            let mirroring = flags6 & 0x1 == 0x1;
-            let persistent_memory = flags6 & 0x2 == 0x2;
-            let has_trainer = flags6 & 0x4 == 0x4;
-            let four_screen_vram = flags6 & 0x8 & 0x8;
-            let mapper_lsb = flags6 & 0xF0 >> 4;
+                let mirroring = flags6 & 0x1 == 0x1;
+                let persistent_memory = flags6 & 0x2 == 0x2;
+                let has_trainer = flags6 & 0x4 == 0x4;
+                let four_screen_vram = flags6 & 0x8 & 0x8;
+                let mapper_lsb = flags6 & 0xF0 >> 4;
 
-            let flags7 = rom[7];
+                let flags7 = rom[7];
 
-            let vs = flags7 & 0x1 == 0x1;
-            let playchoice = flags7 & 0x2 == 0x2;
-            let mapper_msb = (flags7 & 0xF0) >> 4;
+                let vs = flags7 & 0x1 == 0x1;
+                let playchoice = flags7 & 0x2 == 0x2;
+                let mapper_msb = (flags7 & 0xF0) >> 4;
 
-            let prgram_size = if rom[8] == 0 { 1 } else { rom[8] };
+                let prgram_size = if rom[8] == 0 { 1 } else { rom[8] };
 
-            let flags9 = rom[9];
-            let tv_system = flags9 & 0x1 == 0x1;
+                let flags9 = rom[9];
+                let tv_system = flags9 & 0x1 == 0x1;
 
-            let flags10 = rom[10];
-            let tv_system2 = flags10 & 0x3;
-            let has_prg_ram = flags10 & 0b10000 == 0b10000;
-            let has_bus_conflict = flags10 & 0b100000 == 0b100000;
+                let flags10 = rom[10];
+                let tv_system2 = flags10 & 0x3;
+                let has_prg_ram = flags10 & 0b10000 == 0b10000;
+                let has_bus_conflict = flags10 & 0b100000 == 0b100000;
 
-            let padding = &rom[11..16];
-            // TODO: there are checks to do in padding in some cases
-            // TODO: See http://wiki.nesdev.com/w/index.php/INES before variant comparison
+                let padding = &rom[11..16];
+                // TODO: there are checks to do in padding in some cases
+                // TODO: See http://wiki.nesdev.com/w/index.php/INES before variant comparison
+                let mapper = (mapper_msb << 4) | mapper_lsb;
 
-            ////
+                let ines = Ines {
+                    num_prgrom,
+                    num_chrrom,
+                    mirroring,
+                    persistent_memory,
+                    has_trainer,
+                    four_screen_vram,
+                    mapper_lsb,
+                    vs,
+                    playchoice,
+                    mapper_msb,
+                    prgram_size,
+                    tv_system,
+                    tv_system2,
+                    has_prg_ram,
+                    has_bus_conflict,
+                    padding: padding.to_vec(),
+                    mapper: mapper.into(),
+                };
 
-            let mapper = (mapper_msb << 4) | mapper_lsb;
+                println!("Format {:?}", format);
+                println!("Mapper number {}", mapper);
+                println!(
+                    "Num PRG ROM {} ({}KB)",
+                    num_prgrom,
+                    num_prgrom as u32 * 16384
+                );
+                println!(
+                    "Num CHR ROM {} ({}KB)",
+                    num_chrrom,
+                    num_chrrom as u32 * 8192
+                );
+                println!("Has trainer {}", has_trainer);
+                println!("Has PRG RAM {}", has_prg_ram);
 
-            println!("Mapper number {}", mapper);
-            println!(
-                "Num PRG ROM {} ({}KB)",
-                num_prgrom,
-                num_prgrom as u32 * 16384
-            );
-            println!(
-                "Num CHR ROM {} ({}KB)",
-                num_chrrom,
-                num_chrrom as u32 * 8192
-            );
-            println!("Has trainer {}", has_trainer);
-            println!("Has PRG RAM {}", has_prg_ram);
+                RomFile::Ines(ines, rom.to_vec())
+            } else {
+                panic!("Unsupport file type");
+            };
 
-            let format = NESFile::get_file_format(rom);
-
-            println!("Format {:?}", format);
-
-            Self {
-                mapper: mapper.into(),
-                num_prgrom,
-                num_chrrom,
-                data: rom.to_vec(),
-            }
+            file
         }
 
         fn get_file_format(header: &[u8]) -> SupportedFormat {
@@ -2496,9 +2522,7 @@ mod nes_rom {
             let nes2 = ines_format && (header[7] & 0x0C) == 0x08;
             // TODO: check proper size of ROM image "size taking into account byte 9 does not exceed the actual size of the ROM image, then NES 2.0."
 
-            if nes2 {
-                SupportedFormat::ines2
-            } else if ines_format {
+            if ines_format {
                 SupportedFormat::ines
             } else {
                 SupportedFormat::unsupported
@@ -2525,11 +2549,11 @@ fn main() {
         let mut rom = Vec::new();
         buffered.read_to_end(&mut rom).unwrap();
         let rom = rom.as_slice();
-        nes_rom::NESFile::new(rom)
+        nes_rom::RomFile::new(rom)
     } else {
         let rom = nestest;
         is_nestest = true;
-        nes_rom::NESFile::new(rom)
+        nes_rom::RomFile::new(rom)
     };
 
     // println!(
@@ -2539,11 +2563,16 @@ fn main() {
     //     num_chrrom
     // );
 
-    let rom = nesfile.data.as_slice();
+    let rom = match nesfile {
+        RomFile::Ines(_, ref data) => data,
+        RomFile::Ines2(_, _) => {
+            todo!()
+        }
+    };
     let mut nestest_output = File::create("nestest.log").unwrap();
 
     // Load up memory
-    nes_rom::mappers::load_rom(&mut memory, rom, &nesfile);
+    nes_rom::mappers::load_rom(&mut memory, &nesfile);
 
     // let bank_seven = 16 + 7 * 16384;
 
@@ -2779,11 +2808,9 @@ fn main() {
             if ref_line.is_some() {
                 ref_columns_1 = ref_line.unwrap().unwrap();
             } else {
-                println!("NESTEST JOB DONE");
                 break;
             }
 
-            
             let ref_columns = ref_columns_1
                 .split(' ')
                 // .filter(|&thing| !thing.is_empty())
@@ -3200,56 +3227,4 @@ fn main() {
             }
         }
     }
-
-    // let reference = File::open("nestest_reference.log").unwrap();
-    // let reference_buffered = BufReader::new(reference);
-
-    // let output = File::open("nestest.log").unwrap();
-    // let output_buffered = BufReader::new(output);
-
-    // for (count, (ref_line, output_line)) in reference_buffered
-    //     .lines()
-    //     .zip(output_buffered.lines())
-    //     .enumerate()
-    // {
-    //     let ref_columns_1 = ref_line.unwrap();
-    //     let ref_columns = ref_columns_1
-    //         .split(' ')
-    //         // .filter(|&thing| !thing.is_empty())
-    //         .collect::<Vec<&str>>();
-    //     let output_columns = output_line.unwrap();
-    //     let output_columns = output_columns
-    //         .split(' ')
-    //         // .filter(|&thing| !thing.is_empty())
-    //         .collect::<Vec<&str>>();
-
-    //     let mut matched = true;
-
-    //     for ((index, &ref_col), output_col) in
-    //         ref_columns.iter().enumerate().zip(output_columns.clone())
-    //     {
-    //         // if index == 0 {
-    //         //     println!("\u{001b}[37m{:?}", output_columns);
-    //         //     println!("\u{001b}[37m{:?}", ref_columns);
-    //         // }
-    //         if ref_col == output_col {
-    //             print!("\u{001b}[32m")
-    //         } else {
-    //             // print!("({} {})", ref_col, output_col);
-    //             print!("\u{001b}[31m");
-    //             matched = false;
-    //         }
-
-    //         print!("{} ", output_col);
-    //     }
-    //     println!();
-    //     if !matched {
-    //         println!("\u{001b}[37m{} ", ref_columns_1);
-    //         // break;
-    //     }
-
-    //     // if count == 35 {
-    //     //     break;
-    //     // }
-    // }
 }
