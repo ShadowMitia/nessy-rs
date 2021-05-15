@@ -198,6 +198,7 @@ mod rp2a03 {
             DCP,
             ISB, // Sometimes designated ISC
             SLO,
+            RLA,
             Unknown,
         }
 
@@ -253,6 +254,19 @@ mod rp2a03 {
                     | 0xFB
                     | 0xFF
                     | 0x03
+                    | 0x07
+                    | 0x17
+                    | 0x0F
+                    | 0x1F
+                    | 0x1B
+                    | 0x13
+                    | 0x27
+                    | 0x37
+                    | 0x2F
+                    | 0x3F
+                    | 0x3B
+                    | 0x23
+                    | 0x33
             )
         }
 
@@ -554,7 +568,27 @@ mod rp2a03 {
                 0xFB => (Instructions::ISB, AddressingMode::AbsoluteIndirectWithY),
                 0xFF => (Instructions::ISB, AddressingMode::AbsoluteIndirectWithX),
                 // SLO
-                0x03 => (Instructions::SLO, AddressingMode::AbsoluteIndirectWithX),
+                0x03 => (Instructions::SLO, AddressingMode::ZeroPageIndexedIndirect),
+                0x07 => (Instructions::SLO, AddressingMode::ZeroPage),
+                0x0F => (Instructions::SLO, AddressingMode::Absolute),
+                0x17 => (Instructions::SLO, AddressingMode::ZeroPageIndexedWithX),
+                0x1F => (Instructions::SLO, AddressingMode::AbsoluteIndirectWithX),
+                0x1B => (Instructions::SLO, AddressingMode::AbsoluteIndirectWithY),
+                0x13 => (
+                    Instructions::SLO,
+                    AddressingMode::ZeroPageIndirectIndexedWithY,
+                ),
+                // RLA
+                0x27 => (Instructions::RLA, AddressingMode::ZeroPage),
+                0x37 => (Instructions::RLA, AddressingMode::ZeroPageIndexedWithX),
+                0x2F => (Instructions::RLA, AddressingMode::Absolute),
+                0x3F => (Instructions::RLA, AddressingMode::AbsoluteIndirectWithX),
+                0x3B => (Instructions::RLA, AddressingMode::AbsoluteIndirectWithY),
+                0x23 => (Instructions::RLA, AddressingMode::ZeroPageIndexedIndirect),
+                0x33 => (
+                    Instructions::RLA,
+                    AddressingMode::ZeroPageIndirectIndexedWithY,
+                ),
                 // UNKNOWN
                 _ => (Instructions::Unknown, AddressingMode::ZeroPageIndexedWithX),
             }
@@ -3092,6 +3126,13 @@ fn main() {
                 let data = memory.memory[addr as usize];
                 asl(&mut registers, &mut memory, addr, data);
                 ora(&mut registers, memory.memory[addr as usize]);
+                registers.pc += num_operands;
+            }
+
+            Instructions::RLA => {
+                let data = memory.memory[addr as usize];
+                rol(&mut registers, &mut memory, addr, data);
+                and(&mut registers, memory.memory[addr as usize]);
                 registers.pc += num_operands;
             }
 
