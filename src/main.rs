@@ -1960,7 +1960,7 @@ mod rp2a03 {
                 AddressingMode::AbsoluteIndirect => {
                     let addr = address_from_bytes(low_byte, high_byte);
                     // NOTE: Handle hardware bug for JMP with absolute indirect
-                    if low_byte == 0xFF  {
+                    if low_byte == 0xFF {
                         let addr2 = address_from_bytes(0x0, high_byte);
                         Some(address_from_bytes(
                             memory[addr as usize],
@@ -2490,9 +2490,7 @@ fn main() {
                 "{:27}",
                 match (addressing_mode.clone(), num_operands) {
                     (AddressingMode::Relative, _) => format!("${:04X}", registers.pc + addr + 2),
-                    (AddressingMode::Absolute, _)
-                    | (AddressingMode::AbsoluteIndirectWithX, _)
-                    | (AddressingMode::AbsoluteIndirectWithY, _) => match instruction {
+                    (AddressingMode::Absolute, _) => match instruction {
                         Instructions::JMP
                         | Instructions::BCS
                         | Instructions::JSR
@@ -2507,6 +2505,18 @@ fn main() {
                             addr, memory.memory[mirror_addr as usize]
                         ),
                     },
+                    (AddressingMode::AbsoluteIndirectWithX, _) => format!(
+                        "${:04X},X @ {:04X} = {:02X}",
+                        address_from_bytes(ops.0, ops.1),
+                        address_from_bytes(ops.0, ops.1).wrapping_add(registers.x.into()),
+                        memory.memory[mirror_addr as usize]
+                    ),
+                    (AddressingMode::AbsoluteIndirectWithY, _) => format!(
+                        "${:04X},Y @ {:04X} = {:02X}",
+                        address_from_bytes(ops.0, ops.1),
+                        address_from_bytes(ops.0, ops.1).wrapping_add(registers.y.into()),
+                        memory.memory[mirror_addr as usize]
+                    ),
                     (AddressingMode::Immediate, _) => format!("#${:02X}", addr),
                     (AddressingMode::Accumulator, _) => "A".to_string(),
 
