@@ -233,6 +233,7 @@ mod rp2a03 {
                     | 0x87
                     | 0x8F
                     | 0x97
+                    | 0xEB
             )
         }
 
@@ -470,6 +471,7 @@ mod rp2a03 {
                 0xDE => (Instructions::DEC, AddressingMode::AbsoluteIndirectWithX),
 
                 // UNOFFICIAL OPCODES
+                // NOP
                 0x04 => (Instructions::NOP, AddressingMode::ZeroPage),
                 0x44 => (Instructions::NOP, AddressingMode::ZeroPage),
                 0x64 => (Instructions::NOP, AddressingMode::ZeroPage),
@@ -508,6 +510,8 @@ mod rp2a03 {
                 0x87 => (Instructions::SAX, AddressingMode::ZeroPage),
                 0x8F => (Instructions::SAX, AddressingMode::Absolute),
                 0x97 => (Instructions::SAX, AddressingMode::ZeroPageIndexedWithY),
+                // SBC
+                0xEB => (Instructions::SBC, AddressingMode::Immediate),
                 // UNKNOWN
                 _ => (Instructions::Unknown, AddressingMode::Implied),
             }
