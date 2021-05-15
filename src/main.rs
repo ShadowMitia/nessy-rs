@@ -192,7 +192,9 @@ mod rp2a03 {
             ROR,
             ROL,
             DEC,
+            // UNOFFICIALS
             LAX,
+            SAX,
             Unknown,
         }
 
@@ -227,6 +229,10 @@ mod rp2a03 {
                     | 0xAF
                     | 0xB7
                     | 0xBF
+                    | 0x83
+                    | 0x87
+                    | 0x8F
+                    | 0x97
             )
         }
 
@@ -497,6 +503,11 @@ mod rp2a03 {
                 ),
                 0xB7 => (Instructions::LAX, AddressingMode::ZeroPageIndexedWithY),
                 0xBF => (Instructions::LAX, AddressingMode::AbsoluteIndirectWithY),
+                // SAX
+                0x83 => (Instructions::SAX, AddressingMode::ZeroPageIndexedIndirect),
+                0x87 => (Instructions::SAX, AddressingMode::ZeroPage),
+                0x8F => (Instructions::SAX, AddressingMode::Absolute),
+                0x97 => (Instructions::SAX, AddressingMode::ZeroPageIndexedWithY),
                 // UNKNOWN
                 _ => (Instructions::Unknown, AddressingMode::Implied),
             }
@@ -3034,6 +3045,10 @@ fn main() {
 
                 lda(&mut registers, data);
                 ldx(&mut registers, data as u16);
+                registers.pc += num_operands;
+            }
+            Instructions::SAX => {
+                memory.memory[addr as usize] = ((registers.a & registers.x) as i16) as u8;
                 registers.pc += num_operands;
             }
 
