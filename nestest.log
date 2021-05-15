@@ -1,2 +1,22 @@
-#C6BD  04        Unknown                             A:AA X:97 Y:4E P:EF SP:F9 PPU CYC
->C6BD  04 A9    *NOP $A9 = 00                    A:AA X:97 Y:4E P:EF SP:F9 PPU:128, 89 CYC:14579
+#C72A  D0 E0     BNE $C80C                       A:CB X:04 Y:4F P:6D SP:F1 PPU CYC
+>C72A  D0 E0     BNE $C70C                       A:CB X:04 Y:4F P:6D SP:F1 PPU:129,303 CYC:14764
+#C72A  D0 E0     BNE $C80C                       A:CB X:03 Y:50 P:6D SP:F3 PPU CYC
+>C72A  D0 E0     BNE $C70C                       A:CB X:03 Y:50 P:6D SP:F3 PPU:130, 67 CYC:14799
+#C72A  D0 E0     BNE $C80C                       A:CB X:02 Y:51 P:6D SP:F5 PPU CYC
+>C72A  D0 E0     BNE $C70C                       A:CB X:02 Y:51 P:6D SP:F5 PPU:130,172 CYC:14834
+#C72A  D0 E0     BNE $C80C                       A:CB X:01 Y:52 P:6D SP:F7 PPU CYC
+>C72A  D0 E0     BNE $C70C                       A:CB X:01 Y:52 P:6D SP:F7 PPU:130,277 CYC:14869
+#C72A  D0 E0     BNE $C80C                       A:CB X:00 Y:53 P:6F SP:F9 PPU CYC
+>C72A  D0 E0     BNE $C70C                       A:CB X:00 Y:53 P:6F SP:F9 PPU:131, 41 CYC:14904
+#C72A  D0 E0     BNE $C80C                       A:00 X:04 Y:54 P:25 SP:F1 PPU CYC
+>C72A  D0 E0     BNE $C70C                       A:00 X:04 Y:54 P:25 SP:F1 PPU:132,288 CYC:15100
+#C72A  D0 E0     BNE $C80C                       A:00 X:03 Y:55 P:25 SP:F3 PPU CYC
+>C72A  D0 E0     BNE $C70C                       A:00 X:03 Y:55 P:25 SP:F3 PPU:133, 28 CYC:15127
+#C72A  D0 E0     BNE $C80C                       A:00 X:02 Y:56 P:25 SP:F5 PPU CYC
+>C72A  D0 E0     BNE $C70C                       A:00 X:02 Y:56 P:25 SP:F5 PPU:133,109 CYC:15154
+#C72A  D0 E0     BNE $C80C                       A:00 X:01 Y:57 P:25 SP:F7 PPU CYC
+>C72A  D0 E0     BNE $C70C                       A:00 X:01 Y:57 P:25 SP:F7 PPU:133,190 CYC:15181
+#C72A  D0 E0     BNE $C80C                       A:00 X:00 Y:58 P:27 SP:F9 PPU CYC
+>C72A  D0 E0     BNE $C70C                       A:00 X:00 Y:58 P:27 SP:F9 PPU:133,271 CYC:15208
+#E545  A3        Unknown                             A:00 X:03 Y:77 P:67 SP:FB PPU CYC
+>E545  A3 40    *LAX ($40,X) @ 43 = 0580 = 55    A:00 X:03 Y:77 P:67 SP:FB PPU:134,134 CYC:15276

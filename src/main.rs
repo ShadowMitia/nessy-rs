@@ -196,6 +196,35 @@ mod rp2a03 {
         }
 
         #[must_use]
+        pub fn is_illegal_opcode(opcode: u8) -> bool {
+            matches!(
+                opcode,
+                0x4 | 0x44
+                    | 0x64
+                    | 0xC
+                    | 0x14
+                    | 0x34
+                    | 0x54
+                    | 0x74
+                    | 0xD4
+                    | 0xF4
+                    | 0x1A
+                    | 0x3A
+                    | 0x5A
+                    | 0x7A
+                    | 0xDA
+                    | 0xFA
+                    | 0x80
+                    | 0x1C
+                    | 0x3C
+                    | 0x5C
+                    | 0x7C
+                    | 0xDC
+                    | 0xFC
+            )
+        }
+
+        #[must_use]
         pub fn match_instruction(opcode: u8) -> (Instructions, AddressingMode) {
             match opcode {
                 // LDA
@@ -427,6 +456,31 @@ mod rp2a03 {
                 0xD6 => (Instructions::DEC, AddressingMode::ZeroPageIndexedWithX),
                 0xCE => (Instructions::DEC, AddressingMode::Absolute),
                 0xDE => (Instructions::DEC, AddressingMode::AbsoluteIndirectWithX),
+
+                // UNOFFICIAL OPCODES
+                0x04 => (Instructions::NOP, AddressingMode::ZeroPage),
+                0x44 => (Instructions::NOP, AddressingMode::ZeroPage),
+                0x64 => (Instructions::NOP, AddressingMode::ZeroPage),
+                0xC => (Instructions::NOP, AddressingMode::Absolute),
+                0x14 => (Instructions::NOP, AddressingMode::ZeroPageIndexedWithX),
+                0x34 => (Instructions::NOP, AddressingMode::ZeroPageIndexedWithX),
+                0x54 => (Instructions::NOP, AddressingMode::ZeroPageIndexedWithX),
+                0x74 => (Instructions::NOP, AddressingMode::ZeroPageIndexedWithX),
+                0xd4 => (Instructions::NOP, AddressingMode::ZeroPageIndexedWithX),
+                0xF4 => (Instructions::NOP, AddressingMode::ZeroPageIndexedWithX),
+                0x1A => (Instructions::NOP, AddressingMode::Implied),
+                0x3A => (Instructions::NOP, AddressingMode::Implied),
+                0x5A => (Instructions::NOP, AddressingMode::Implied),
+                0x7A => (Instructions::NOP, AddressingMode::Implied),
+                0xDA => (Instructions::NOP, AddressingMode::Implied),
+                0xFA => (Instructions::NOP, AddressingMode::Implied),
+                0x80 => (Instructions::NOP, AddressingMode::Immediate),
+                0x1C => (Instructions::NOP, AddressingMode::AbsoluteIndirectWithX),
+                0x3C => (Instructions::NOP, AddressingMode::AbsoluteIndirectWithX),
+                0x5C => (Instructions::NOP, AddressingMode::AbsoluteIndirectWithX),
+                0x7C => (Instructions::NOP, AddressingMode::AbsoluteIndirectWithX),
+                0xDC => (Instructions::NOP, AddressingMode::AbsoluteIndirectWithX),
+                0xFC => (Instructions::NOP, AddressingMode::AbsoluteIndirectWithX),
                 // UNKNOWN
                 _ => (Instructions::Unknown, AddressingMode::Implied),
             }
@@ -2486,7 +2540,11 @@ fn main() {
                 "  ".to_string()
             };
 
-            let instr = format!("{:?}", instruction);
+            let instr = if is_illegal_opcode(byte) {
+                format!("*{:?}", instruction)
+            } else {
+                format!(" {:?}", instruction)
+            };
 
             let addressing_stuff = format!(
                 "{:27}",
@@ -2570,7 +2628,7 @@ fn main() {
             let cycle_stuff = "CYC";
 
             let res = format!(
-                "{}  {} {} {}  {} {} {} {} {}",
+                "{}  {} {} {} {} {} {} {} {}",
                 pc,
                 instruction_byte,
                 op1,
@@ -2617,7 +2675,7 @@ fn main() {
                 writeln!(nestest_output, ">{}", ref_columns_1);
                 count += 1;
                 if count > 0 {
-                    return;
+                    // return;
                 }
                 // break;
                 // return;
