@@ -192,6 +192,7 @@ mod rp2a03 {
             ROR,
             ROL,
             DEC,
+            LAX,
             Unknown,
         }
 
@@ -221,6 +222,11 @@ mod rp2a03 {
                     | 0x7C
                     | 0xDC
                     | 0xFC
+                    | 0xA3
+                    | 0xA7
+                    | 0xAF
+                    | 0xB7
+                    | 0xBF
             )
         }
 
@@ -481,6 +487,16 @@ mod rp2a03 {
                 0x7C => (Instructions::NOP, AddressingMode::AbsoluteIndirectWithX),
                 0xDC => (Instructions::NOP, AddressingMode::AbsoluteIndirectWithX),
                 0xFC => (Instructions::NOP, AddressingMode::AbsoluteIndirectWithX),
+                // LAX
+                0xA3 => (Instructions::LAX, AddressingMode::ZeroPageIndexedIndirect),
+                0xA7 => (Instructions::LAX, AddressingMode::ZeroPage),
+                0xAF => (Instructions::LAX, AddressingMode::Absolute),
+                0xB3 => (
+                    Instructions::LAX,
+                    AddressingMode::ZeroPageIndirectIndexedWithY,
+                ),
+                0xB7 => (Instructions::LAX, AddressingMode::ZeroPageIndexedWithY),
+                0xBF => (Instructions::LAX, AddressingMode::AbsoluteIndirectWithY),
                 // UNKNOWN
                 _ => (Instructions::Unknown, AddressingMode::Implied),
             }
@@ -3005,6 +3021,19 @@ fn main() {
             }
             Instructions::DEC => {
                 dec(&mut registers, &mut memory, addr);
+                registers.pc += num_operands;
+            }
+
+            // UNOFFICIAL Instructions
+            Instructions::LAX => {
+                let data = if addressing_mode == AddressingMode::Immediate {
+                    addr as u8
+                } else {
+                    memory.memory[addr as usize]
+                };
+
+                lda(&mut registers, data);
+                ldx(&mut registers, data as u16);
                 registers.pc += num_operands;
             }
 
