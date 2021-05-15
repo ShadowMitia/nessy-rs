@@ -2641,6 +2641,8 @@ fn main() {
 
     let mut count = 0;
 
+    let mut cycle = 0;
+
     loop {
         let byte = memory.memory[registers.pc as usize];
         let (instruction, addressing_mode) = match_instruction(byte);
@@ -2677,10 +2679,6 @@ fn main() {
         // print_nestest_log(instruction, &registers, &memory, num_operands, addr, ops);
 
         if is_nestest {
-            let pc = format!("{:04X}", registers.pc);
-
-            let instruction_byte = format!("{:02X}", byte);
-
             let op1 = if num_operands >= 1 {
                 format!("{:02X}", ops.0)
             } else {
@@ -2699,108 +2697,97 @@ fn main() {
                 format!(" {:?}", instruction)
             };
 
-            let addressing_stuff = format!(
-                "{:27}",
-                match (addressing_mode.clone(), num_operands) {
-                    (AddressingMode::Relative, _) => format!(
-                        "${:04X}",
-                        registers
-                            .pc
-                            .wrapping_add(if addr >= 0x80 {
-                                (addr as i32 - (1 << 8)) as u16
-                            } else {
-                                addr
-                            })
-                            .wrapping_add(2)
-                    ),
-                    (AddressingMode::Absolute, _) => match instruction {
-                        Instructions::JMP
-                        | Instructions::BCS
-                        | Instructions::JSR
-                        | Instructions::BCC
-                        | Instructions::BEQ
-                        | Instructions::BMI
-                        | Instructions::BNE
-                        | Instructions::BPL
-                        | Instructions::BVC => format!("${:04X}", addr),
-                        _ => format!(
-                            "${:04X} = {:02X}",
-                            addr, memory.memory[mirror_addr as usize]
-                        ),
-                    },
-                    (AddressingMode::AbsoluteIndirectWithX, _) => format!(
-                        "${:04X},X @ {:04X} = {:02X}",
-                        address_from_bytes(ops.0, ops.1),
-                        address_from_bytes(ops.0, ops.1).wrapping_add(registers.x.into()),
-                        memory.memory[mirror_addr as usize]
-                    ),
-                    (AddressingMode::AbsoluteIndirectWithY, _) => format!(
-                        "${:04X},Y @ {:04X} = {:02X}",
-                        address_from_bytes(ops.0, ops.1),
-                        address_from_bytes(ops.0, ops.1).wrapping_add(registers.y.into()),
-                        memory.memory[mirror_addr as usize]
-                    ),
-                    (AddressingMode::Immediate, _) => format!("#${:02X}", addr),
-                    (AddressingMode::Accumulator, _) => "A".to_string(),
-
-                    (AddressingMode::ZeroPageIndexedIndirect, _) => format!(
-                        "(${:02X},X) @ {:02X} = {:04X} = {:02X}",
-                        ops.0,
-                        ops.0.wrapping_add(registers.x),
-                        addr,
-                        memory.memory[mirror_addr as usize]
-                    ),
-                    (AddressingMode::ZeroPageIndirectIndexedWithY, _) => format!(
-                        "(${:02X}),Y = {:04X} @ {:04X} = {:02X}",
-                        ops.0,
-                        address_from_bytes(
-                            memory.memory[ops.0 as usize],
-                            memory.memory[ops.0.wrapping_add(1) as usize]
-                        ),
-                        addr,
-                        memory.memory[mirror_addr as usize]
-                    ),
-                    (AddressingMode::AbsoluteIndirect, _) =>
-                        format!("(${:04X}) = {:04X}", address_from_bytes(ops.0, ops.1), addr),
-                    (AddressingMode::ZeroPage, _) => format!(
-                        "${:02X} = {:02X}",
+            let addressing_stuff = match (addressing_mode.clone(), num_operands) {
+                (AddressingMode::Relative, _) => format!(
+                    "${:04X}",
+                    registers
+                        .pc
+                        .wrapping_add(if addr >= 0x80 {
+                            (addr as i32 - (1 << 8)) as u16
+                        } else {
+                            addr
+                        })
+                        .wrapping_add(2)
+                ),
+                (AddressingMode::Absolute, _) => match instruction {
+                    Instructions::JMP
+                    | Instructions::BCS
+                    | Instructions::JSR
+                    | Instructions::BCC
+                    | Instructions::BEQ
+                    | Instructions::BMI
+                    | Instructions::BNE
+                    | Instructions::BPL
+                    | Instructions::BVC => format!("${:04X}", addr),
+                    _ => format!(
+                        "${:04X} = {:02X}",
                         addr, memory.memory[mirror_addr as usize]
                     ),
-                    (AddressingMode::ZeroPageIndexedWithX, _) => format!(
-                        "${:02X},X @ {:02X} = {:02X}",
-                        ops.0,
-                        ops.0.wrapping_add(registers.x),
-                        memory.memory[mirror_addr as usize]
+                },
+                (AddressingMode::AbsoluteIndirectWithX, _) => format!(
+                    "${:04X},X @ {:04X} = {:02X}",
+                    address_from_bytes(ops.0, ops.1),
+                    address_from_bytes(ops.0, ops.1).wrapping_add(registers.x.into()),
+                    memory.memory[mirror_addr as usize]
+                ),
+                (AddressingMode::AbsoluteIndirectWithY, _) => format!(
+                    "${:04X},Y @ {:04X} = {:02X}",
+                    address_from_bytes(ops.0, ops.1),
+                    address_from_bytes(ops.0, ops.1).wrapping_add(registers.y.into()),
+                    memory.memory[mirror_addr as usize]
+                ),
+                (AddressingMode::Immediate, _) => format!("#${:02X}", addr),
+                (AddressingMode::Accumulator, _) => "A".to_string(),
+
+                (AddressingMode::ZeroPageIndexedIndirect, _) => format!(
+                    "(${:02X},X) @ {:02X} = {:04X} = {:02X}",
+                    ops.0,
+                    ops.0.wrapping_add(registers.x),
+                    addr,
+                    memory.memory[mirror_addr as usize]
+                ),
+                (AddressingMode::ZeroPageIndirectIndexedWithY, _) => format!(
+                    "(${:02X}),Y = {:04X} @ {:04X} = {:02X}",
+                    ops.0,
+                    address_from_bytes(
+                        memory.memory[ops.0 as usize],
+                        memory.memory[ops.0.wrapping_add(1) as usize]
                     ),
-                    (AddressingMode::ZeroPageIndexedWithY, _) => format!(
-                        "${:02X},Y @ {:02X} = {:02X}",
-                        ops.0,
-                        ops.0.wrapping_add(registers.y),
-                        memory.memory[mirror_addr as usize]
-                    ),
-                    _ => "".to_string(),
+                    addr,
+                    memory.memory[mirror_addr as usize]
+                ),
+                (AddressingMode::AbsoluteIndirect, _) => {
+                    format!("(${:04X}) = {:04X}", address_from_bytes(ops.0, ops.1), addr)
                 }
-            );
-
-            let registers_and_stuff = format!(
-                "A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}",
-                registers.a, registers.x, registers.y, registers.status, memory.stack_pointer
-            );
-
-            let ppu_stuff = "PPU";
-            let cycle_stuff = "CYC";
+                (AddressingMode::ZeroPage, _) => format!(
+                    "${:02X} = {:02X}",
+                    addr, memory.memory[mirror_addr as usize]
+                ),
+                (AddressingMode::ZeroPageIndexedWithX, _) => format!(
+                    "${:02X},X @ {:02X} = {:02X}",
+                    ops.0,
+                    ops.0.wrapping_add(registers.x),
+                    memory.memory[mirror_addr as usize]
+                ),
+                (AddressingMode::ZeroPageIndexedWithY, _) => format!(
+                    "${:02X},Y @ {:02X} = {:02X}",
+                    ops.0,
+                    ops.0.wrapping_add(registers.y),
+                    memory.memory[mirror_addr as usize]
+                ),
+                _ => "".to_string(),
+            };
 
             let res = format!(
-                "{}  {} {} {} {} {} {} {} {}",
-                pc,
-                instruction_byte,
+                "{:04X}  {:02X} {} {} {} {:27} A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X} PPU:0,0 CYC:{}",
+                registers.pc,
+                byte,
                 op1,
                 op2,
                 instr,
                 addressing_stuff,
-                registers_and_stuff,
-                ppu_stuff,
-                cycle_stuff
+                registers.a, registers.x, registers.y, registers.status, memory.stack_pointer,
+                cycle,
             );
 
             let ref_line = reference_lines.next();
@@ -2824,9 +2811,6 @@ fn main() {
 
             for (&ref_col, output_col) in ref_columns.iter().zip(output_columns.clone()) {
                 print!("\u{001b}[37m");
-                if output_col.contains("PPU") || output_col.contains("CYC") {
-                    continue;
-                }
                 if ref_col == output_col {
                     print!("\u{001b}[32m")
                 } else {
@@ -2841,12 +2825,6 @@ fn main() {
                 println!("\u{001b}[37m{} ", ref_columns_1);
                 writeln!(nestest_output, "#{}", &res);
                 writeln!(nestest_output, ">{}", ref_columns_1);
-                count += 1;
-                if count > 1 {
-                    // return;
-                }
-                // break;
-                // return;
             }
             // sleep(Duration::from_millis(10));
         }
