@@ -200,6 +200,7 @@ mod rp2a03 {
             SLO,
             RLA,
             SRE,
+            RRA,
             Unknown,
         }
 
@@ -275,6 +276,13 @@ mod rp2a03 {
                     | 0x5B
                     | 0x43
                     | 0x53
+                    | 0x67
+                    | 0x77
+                    | 0x6F
+                    | 0x7F
+                    | 0x7B
+                    | 0x63
+                    | 0x73
             )
         }
 
@@ -606,6 +614,17 @@ mod rp2a03 {
                 0x43 => (Instructions::SRE, AddressingMode::ZeroPageIndexedIndirect),
                 0x53 => (
                     Instructions::SRE,
+                    AddressingMode::ZeroPageIndirectIndexedWithY,
+                ),
+                // RRA
+                0x67 => (Instructions::RRA, AddressingMode::ZeroPage),
+                0x77 => (Instructions::RRA, AddressingMode::ZeroPageIndexedWithX),
+                0x6F => (Instructions::RRA, AddressingMode::Absolute),
+                0x7F => (Instructions::RRA, AddressingMode::AbsoluteIndirectWithX),
+                0x7B => (Instructions::RRA, AddressingMode::AbsoluteIndirectWithY),
+                0x63 => (Instructions::RRA, AddressingMode::ZeroPageIndexedIndirect),
+                0x73 => (
+                    Instructions::RRA,
                     AddressingMode::ZeroPageIndirectIndexedWithY,
                 ),
                 // UNKNOWN
@@ -2755,9 +2774,16 @@ fn main() {
                 cycle_stuff
             );
 
-            let ref_line = reference_lines.next().unwrap();
+            let ref_line = reference_lines.next();
+            let ref_columns_1;
+            if ref_line.is_some() {
+                ref_columns_1 = ref_line.unwrap().unwrap();
+            } else {
+                println!("NESTEST JOB DONE");
+                break;
+            }
 
-            let ref_columns_1 = ref_line.unwrap();
+            
             let ref_columns = ref_columns_1
                 .split(' ')
                 // .filter(|&thing| !thing.is_empty())
@@ -2790,7 +2816,7 @@ fn main() {
                 writeln!(nestest_output, ">{}", ref_columns_1);
                 count += 1;
                 if count > 1 {
-                    return;
+                    // return;
                 }
                 // break;
                 // return;
@@ -3157,6 +3183,11 @@ fn main() {
             Instructions::SRE => {
                 lsr(&mut registers, &mut memory, addr);
                 eor(&mut registers, memory.memory[addr as usize]);
+                registers.pc += num_operands;
+            }
+            Instructions::RRA => {
+                ror(&mut registers, &mut memory, addr);
+                adc(&mut registers, memory.memory[addr as usize]);
                 registers.pc += num_operands;
             }
 
