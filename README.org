@@ -1,3 +1,34 @@
 * A NES emulator
 
-WIP
+** Usage (WIP)
+
+You can run the emulot and test it against nestest by running without argument
+
+```
+cargo run 
+```
+
+You can pass a ROM, but it won't do anything interesting for now.
+
+```
+cargo run [PATH_TO_ROM]
+```
+
+** Development
+
+```
+git clone github.com/shadowMitia/nessy-rs
+cd nessy-rs
+cargo build
+```
+
+** 6502 NES CPU
+
+Passes NESTEST (99.9%)
+Still missing a few unofficial instructions though...
+
+** Supported Features
+
+*** Mappers
+
+- [X] Mapper 0
