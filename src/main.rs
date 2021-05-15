@@ -196,6 +196,7 @@ mod rp2a03 {
             LAX,
             SAX,
             DCP,
+            ISB, // Sometimes designated ISC
             Unknown,
         }
 
@@ -242,6 +243,14 @@ mod rp2a03 {
                     | 0xD7
                     | 0xD3
                     | 0xC7
+                    | 0xB3
+                    | 0xE3
+                    | 0xE7
+                    | 0xEF
+                    | 0xF3
+                    | 0xF7
+                    | 0xFB
+                    | 0xFF
             )
         }
 
@@ -527,9 +536,23 @@ mod rp2a03 {
                 0xDF => (Instructions::DCP, AddressingMode::AbsoluteIndirectWithX),
                 0xDB => (Instructions::DCP, AddressingMode::AbsoluteIndirectWithY),
                 0xD7 => (Instructions::DCP, AddressingMode::ZeroPageIndexedWithX),
-                0xD3 => (Instructions::DCP, AddressingMode::ZeroPageIndirectIndexedWithY),
+                0xD3 => (
+                    Instructions::DCP,
+                    AddressingMode::ZeroPageIndirectIndexedWithY,
+                ),
+                // ISC
+                0xE3 => (Instructions::ISB, AddressingMode::ZeroPageIndexedIndirect),
+                0xE7 => (Instructions::ISB, AddressingMode::ZeroPage),
+                0xEF => (Instructions::ISB, AddressingMode::Absolute),
+                0xF3 => (
+                    Instructions::ISB,
+                    AddressingMode::ZeroPageIndirectIndexedWithY,
+                ),
+                0xF7 => (Instructions::ISB, AddressingMode::ZeroPageIndexedWithX),
+                0xFB => (Instructions::ISB, AddressingMode::AbsoluteIndirectWithY),
+                0xFF => (Instructions::ISB, AddressingMode::AbsoluteIndirectWithX),
                 // UNKNOWN
-                _ => (Instructions::Unknown, AddressingMode::Implied),
+                _ => (Instructions::Unknown, AddressingMode::ZeroPageIndexedWithX),
             }
         }
 
@@ -1387,26 +1410,7 @@ mod rp2a03 {
         }
 
         pub fn sbc(registers: &mut Registers, value: u8) {
-            let carry = if registers.is_flag_set(StatusFlag::C) {
-                0
-            } else {
-                1
-            } as u8;
-
-            let a = registers.a;
-            let m = value;
-
-            let temp = (a as i16 - m as i16 - carry as i16) as u16;
-
-            registers.a = temp as u8;
-
-            registers.set_flag(StatusFlag::C, (1 << 8) & temp != (1 << 8));
-            registers.set_flag(
-                StatusFlag::V,
-                a >= 0x80 && m <= 0x80 && temp < 0x80 || a < 0x80 && m > 0x80 && temp >= 0x80,
-            );
-            registers.set_flag(StatusFlag::Z, registers.a == 0);
-            registers.set_flag(StatusFlag::N, registers.a >= 0x80);
+            adc(registers, !value);
         }
 
         #[test]
@@ -1662,10 +1666,12 @@ mod rp2a03 {
 
             registers.a = temp as u8;
 
-            registers.set_flag(StatusFlag::C, (1 << 8) & temp == (1 << 8));
+            registers.set_flag(StatusFlag::C, temp > 0xFF);
             registers.set_flag(
                 StatusFlag::V,
-                a >= 0x80 && m >= 0x80 && temp < 0x80 || a < 0x80 && m < 0x80 && temp >= 0x80,
+                // NOTE: found here https://stackoverflow.com/questions/29193303/6502-emulation-proper-way-to-implement-adc-and-sbc
+                // NOTE: but unsure why this works and the previous and why I had issues with it...
+                !(a ^ value) & (a ^ temp as u8) & 0x80 == 0x80, 
             );
             registers.set_flag(StatusFlag::Z, registers.a == 0);
             registers.set_flag(StatusFlag::N, registers.a >= 0x80);
@@ -1878,7 +1884,7 @@ mod rp2a03 {
             assert_eq!(registers.x, memory.stack_pointer as u8);
         }
 
-        pub fn dex(registers: &mut Registers, addr: u16) {
+        pub fn dex(registers: &mut Registers) {
             registers.x = (registers.x as i16 - 1) as u8;
             registers.set_flag(StatusFlag::Z, registers.x == 0);
             registers.set_flag(StatusFlag::N, registers.x >= 0x80);
@@ -1888,12 +1894,12 @@ mod rp2a03 {
         fn dex_test() {
             let mut registers = Registers::new();
 
-            dex(&mut registers, 0x1);
+            dex(&mut registers);
             assert_eq!(registers.x, 0xFF);
             assert_eq!(registers.status, 0b10000000);
 
             registers.x = 0x43;
-            dex(&mut registers, 0x1);
+            dex(&mut registers);
             assert_eq!(registers.x, 0x42);
             assert_eq!(registers.status, 0b00000000);
         }
@@ -2338,10 +2344,6 @@ mod nes_rom {
         pub data: Vec<u8>,
     }
 
-    pub const HEADER_START: usize = 0;
-    pub const TRAINER_START: usize = 17;
-    pub const PRG_ROM_START: usize = 529;
-
     impl NESFile {
         pub fn new(rom: &[u8]) -> Self {
             let nes = &rom[0..4];
@@ -2732,7 +2734,7 @@ fn main() {
                 writeln!(nestest_output, ">{}", ref_columns_1);
                 count += 1;
                 if count > 1 {
-                    // return;
+                    return;
                 }
                 // break;
                 // return;
@@ -3022,7 +3024,7 @@ fn main() {
                 registers.pc += num_operands;
             }
             Instructions::DEX => {
-                dex(&mut registers, addr);
+                dex(&mut registers);
                 registers.pc += num_operands;
             }
             Instructions::LSR => {
@@ -3074,6 +3076,12 @@ fn main() {
             Instructions::DCP => {
                 dec(&mut registers, &mut memory, addr);
                 cmp(&mut registers, memory.memory[addr as usize]);
+                registers.pc += num_operands;
+            }
+
+            Instructions::ISB => {
+                inc(&mut registers, &mut memory, addr);
+                sbc(&mut registers, memory.memory[addr as usize]);
                 registers.pc += num_operands;
             }
 
