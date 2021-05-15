@@ -2,5 +2,5 @@
 >E652  B3 43    *LAX ($43),Y = 04FF @ 0580 = 55  A:00 X:03 Y:81 P:67 SP:FB PPU:137, 38 CYC:15585
 #E678  B3 45     LAX ($45),Y = 0432 @ 0432 = AA  A:00 X:05 Y:00 P:26 SP:FB PPU CYC
 >E678  B3 45    *LAX ($45),Y = 0432 @ 0432 = AA  A:00 X:05 Y:00 P:26 SP:FB PPU:137,173 CYC:15630
-#E92E  C3        Unknown                             A:40 X:02 Y:95 P:64 SP:FB PPU CYC
->E92E  C3 45    *DCP ($45,X) @ 47 = 0647 = EB    A:40 X:02 Y:95 P:64 SP:FB PPU:146,173 CYC:16653
+#EB9E  E3        Unknown                             A:40 X:02 Y:AA P:64 SP:FB PPU CYC
+>EB9E  E3 45    *ISB ($45,X) @ 47 = 0647 = EB    A:40 X:02 Y:AA P:64 SP:FB PPU:160,331 CYC:18297

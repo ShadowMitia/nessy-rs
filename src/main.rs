@@ -195,6 +195,7 @@ mod rp2a03 {
             // UNOFFICIALS
             LAX,
             SAX,
+            DCP,
             Unknown,
         }
 
@@ -234,6 +235,13 @@ mod rp2a03 {
                     | 0x8F
                     | 0x97
                     | 0xEB
+                    | 0xC3
+                    | 0xCF
+                    | 0xDF
+                    | 0xDB
+                    | 0xD7
+                    | 0xD3
+                    | 0xC7
             )
         }
 
@@ -512,6 +520,14 @@ mod rp2a03 {
                 0x97 => (Instructions::SAX, AddressingMode::ZeroPageIndexedWithY),
                 // SBC
                 0xEB => (Instructions::SBC, AddressingMode::Immediate),
+                // DCP
+                0xC3 => (Instructions::DCP, AddressingMode::ZeroPageIndexedIndirect),
+                0xC7 => (Instructions::DCP, AddressingMode::ZeroPage),
+                0xCF => (Instructions::DCP, AddressingMode::Absolute),
+                0xDF => (Instructions::DCP, AddressingMode::AbsoluteIndirectWithX),
+                0xDB => (Instructions::DCP, AddressingMode::AbsoluteIndirectWithY),
+                0xD7 => (Instructions::DCP, AddressingMode::ZeroPageIndexedWithX),
+                0xD3 => (Instructions::DCP, AddressingMode::ZeroPageIndirectIndexedWithY),
                 // UNKNOWN
                 _ => (Instructions::Unknown, AddressingMode::Implied),
             }
@@ -3053,6 +3069,11 @@ fn main() {
             }
             Instructions::SAX => {
                 memory.memory[addr as usize] = ((registers.a & registers.x) as i16) as u8;
+                registers.pc += num_operands;
+            }
+            Instructions::DCP => {
+                dec(&mut registers, &mut memory, addr);
+                cmp(&mut registers, memory.memory[addr as usize]);
                 registers.pc += num_operands;
             }
 
