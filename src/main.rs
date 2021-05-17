@@ -1,9 +1,4 @@
-use std::{
-    fs::File,
-    io::{BufRead, BufReader, Read, Write},
-    thread::sleep,
-    time::Duration,
-};
+use std::{fs::File, io::{BufRead, BufReader, Read, Write}, mem, thread::sleep, time::Duration};
 mod rp2a03;
 use rp2a03::{instructions::*, utils::RESET_VECTOR_ADDRESS, utils::*, Registers, *};
 
@@ -346,31 +341,33 @@ fn main() {
             let ref_cyc = ref_columns.iter().last().unwrap();
             let cyc = output_columns.iter().last().unwrap();
 
-            // for (&ref_col, output_col) in ref_columns.iter().zip(output_columns.clone()) {
-            //     print!("\u{001b}[37m");
-            //     if output_col.contains("PPU") {
-            //         continue;
-            //     }
-            //     if ref_col == output_col {
-            //         print!("\u{001b}[32m")
-            //     } else {
-            //         // print!("({} {})", ref_col, output_col);
-            //         print!("\u{001b}[31m");
-            //         matched = false;
-            //     }
-            //     print!("{} ", output_col);
-            // }
-            // println!();
-            // if !matched {
-            println!("\u{001b}[35m{} ", res);
-            println!("\u{001b}[37m{} ", ref_columns_1);
-            // writeln!(nestest_output, "#{}", &res);
-            // writeln!(nestest_output, ">{}", ref_columns_1);
-            // }
-
-            if cyc != ref_cyc {
-                break;
+            for (&ref_col, output_col) in ref_columns.iter().zip(output_columns.clone()) {
+                print!("\u{001b}[37m");
+                if ref_col == output_col {
+                    print!("\u{001b}[32m")
+                } else {
+                    // print!("({} {})", ref_col, output_col);
+                    print!("\u{001b}[31m");
+                    matched = false;
+                }
+                print!("{} ", output_col);
             }
+            println!();
+            if !matched {
+                // println!("\u{001b}[35m{} ", res);
+                println!("\u{001b}[37m{} ", ref_columns_1);
+                // writeln!(nestest_output, "#{}", &res);
+                // writeln!(nestest_output, ">{}", ref_columns_1);
+
+                count += 1;
+                if count > 2 {
+                    break;
+                }
+            }
+
+            // if cyc != ref_cyc {
+            //     break;
+            // }
 
             // sleep(Duration::from_millis(10));
         }
@@ -758,7 +755,50 @@ fn main() {
         }
 
         let new_cycles = get_cycles(instruction, addressing_mode.clone(), page_crossed, branched);
-
         cycle += new_cycles as u32;
+
+        // PPU
+
+        // PPUCTRL register
+        let nmi_enable = memory.memory[0x2000] & 0b10000000 == 0b10000000;
+        let ppu_master_slave = memory.memory[0x2000] & 0b01000000 == 0b01000000;
+        let sprite_height = memory.memory[0x2000] & 0b00100000;
+        let background_tile_select = memory.memory[0x2000] & 0b00010000 == 0b00010000;
+        let sprite_tile_select = memory.memory[0x2000] & 0b00001000 == 0b00001000;
+        let increment_mode = memory.memory[0x2000] & 0b00000100 == 0b00000100;
+        let nametable_select = memory.memory[0x2000] & 0b11;
+
+        // PPUMASK register
+        let color_emphasis = (memory.memory[0x2001] & 0b11100000) >> 5;
+        let sprite_enable = memory.memory[0x2001] & 0b10000 == 0b10000;
+        let background_enable = memory.memory[0x2001] & 0b1000 == 0b1000;
+        let sprite_left_column_enable = memory.memory[0x2001] & 0b100 == 0b100;
+        let background_left_column_enable = memory.memory[0x2001] & 0b10 == 0b10;
+        let greyscale = memory.memory[0x2001] & 0b1 == 0b1;
+
+        // PPUSTATUS register
+        let vblank = memory.memory[0x2002] & 0b10000000 == 0b10000000;
+        let sprite_0_hit = memory.memory[0x2002] & 0b1000000 == 0b1000000;
+        let sprite_overflow = memory.memory[0x2002] & 0b100000 == 0b100000;
+        
+        // OAMADDR register
+        let oamaddr = memory.memory[0x2003];
+
+        // OAMDATA register
+        let oamdata = memory.memory[0x2004];
+
+        // PPUSCROLL register
+        let ppuscroll = memory.memory[0x2005];
+
+        // PPUADDR regsiter
+        let ppuaddr = memory.memory[0x2006];
+
+        // PPUDATA regsiter
+        let ppudata = memory.memory[0x2007];
+
+        // OAMDATA register
+        let oamdata = memory.memory[0x4014];
     }
+
+    println!("Exiting...");
 }

@@ -10,13 +10,20 @@ pub mod mappers {
         match nesfile {
             RomFile::Ines(nesfile, data) => match nesfile.mapper {
                 Mapper::Nrom => {
-                    memory.memory[0x8000..0x8000 + 16384]
-                        .copy_from_slice(&data[16..16 + 16384]);
+                    memory.memory[0x8000..0x8000 + 16384].copy_from_slice(&data[16..16 + 16384]);
 
                     memory.memory[0xC000..=0xFFFF].copy_from_slice(
                         &data[(16 + 16384 * (nesfile.num_prgrom - 1) as usize)
                             ..16 + 16384 * (nesfile.num_prgrom) as usize],
                     );
+
+                    memory.ppu[0x0000..0x1FFF].copy_from_slice(
+                        &data[(16 + 16384 * (nesfile.num_prgrom as usize) + 1)
+                            ..(16
+                                + 16384 * (nesfile.num_prgrom as usize)
+                                + (nesfile.num_chrrom as usize) * 8192)
+                                as usize],
+                    )
                 }
                 Mapper::Unknown => panic!("Unknown mapper"),
             },
