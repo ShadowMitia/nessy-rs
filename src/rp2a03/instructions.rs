@@ -1,5 +1,6 @@
-use super::*;
+use super::{cpu::*, *};
 
+/// Represents the three letter name of an instruction
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 #[allow(clippy::upper_case_acronyms)]
 pub enum InstructionName {
@@ -69,28 +70,28 @@ pub enum InstructionName {
     RRA,
 }
 
+/// Associates an InstructionName to an AddressingMode, used by `match_instruction`
+/// to convert opcodes to instruction and adressing mode
+/// Also differentiates Official from Unofficial opcodes, for clarity
 pub enum Instruction {
     Official(InstructionName, AddressingMode),
     Unofficial(InstructionName, AddressingMode),
     Unknown,
 }
 
+/// Given an `u8` opcode, returns the `Instruction` corresponding to the instruction and adressing mode
+///
+/// Manages all official and unoffical unstrictions. Retursn `Unknown` if opcode is invalid.
 #[must_use]
 pub fn match_instruction(opcode: u8) -> Instruction {
     match opcode {
         // LDA
         0xA9 => Instruction::Official(InstructionName::LDA, AddressingMode::Immediate),
         0xA5 => Instruction::Official(InstructionName::LDA, AddressingMode::ZeroPage),
-        0xB5 => {
-            Instruction::Official(InstructionName::LDA, AddressingMode::ZeroPageIndexedWithX)
-        }
+        0xB5 => Instruction::Official(InstructionName::LDA, AddressingMode::ZeroPageIndexedWithX),
         0xAD => Instruction::Official(InstructionName::LDA, AddressingMode::Absolute),
-        0xBD => {
-            Instruction::Official(InstructionName::LDA, AddressingMode::AbsoluteIndirectWithX)
-        }
-        0xB9 => {
-            Instruction::Official(InstructionName::LDA, AddressingMode::AbsoluteIndirectWithY)
-        }
+        0xBD => Instruction::Official(InstructionName::LDA, AddressingMode::AbsoluteIndirectWithX),
+        0xB9 => Instruction::Official(InstructionName::LDA, AddressingMode::AbsoluteIndirectWithY),
         0xA1 => Instruction::Official(
             InstructionName::LDA,
             AddressingMode::ZeroPageIndexedIndirect,
@@ -106,58 +107,38 @@ pub fn match_instruction(opcode: u8) -> Instruction {
         0x0 => Instruction::Official(InstructionName::BRK, AddressingMode::Implied),
         // STA
         0x8d => Instruction::Official(InstructionName::STA, AddressingMode::Absolute),
-        0x9d => {
-            Instruction::Official(InstructionName::STA, AddressingMode::AbsoluteIndirectWithX)
-        }
-        0x99 => {
-            Instruction::Official(InstructionName::STA, AddressingMode::AbsoluteIndirectWithY)
-        }
+        0x9d => Instruction::Official(InstructionName::STA, AddressingMode::AbsoluteIndirectWithX),
+        0x99 => Instruction::Official(InstructionName::STA, AddressingMode::AbsoluteIndirectWithY),
         0x85 => Instruction::Official(InstructionName::STA, AddressingMode::ZeroPage),
         0x81 => Instruction::Official(
             InstructionName::STA,
             AddressingMode::ZeroPageIndexedIndirect,
         ),
-        0x95 => {
-            Instruction::Official(InstructionName::STA, AddressingMode::ZeroPageIndexedWithX)
-        }
+        0x95 => Instruction::Official(InstructionName::STA, AddressingMode::ZeroPageIndexedWithX),
         0x91 => Instruction::Official(
             InstructionName::STA,
             AddressingMode::ZeroPageIndirectIndexedWithY,
         ),
         // INC
         0xEE => Instruction::Official(InstructionName::INC, AddressingMode::Absolute),
-        0xFE => {
-            Instruction::Official(InstructionName::INC, AddressingMode::AbsoluteIndirectWithX)
-        }
+        0xFE => Instruction::Official(InstructionName::INC, AddressingMode::AbsoluteIndirectWithX),
         0xE6 => Instruction::Official(InstructionName::INC, AddressingMode::ZeroPage),
-        0xF6 => {
-            Instruction::Official(InstructionName::INC, AddressingMode::ZeroPageIndexedWithX)
-        }
+        0xF6 => Instruction::Official(InstructionName::INC, AddressingMode::ZeroPageIndexedWithX),
         // LDX
         0xAE => Instruction::Official(InstructionName::LDX, AddressingMode::Absolute),
-        0xBE => {
-            Instruction::Official(InstructionName::LDX, AddressingMode::AbsoluteIndirectWithY)
-        }
+        0xBE => Instruction::Official(InstructionName::LDX, AddressingMode::AbsoluteIndirectWithY),
         0xA2 => Instruction::Official(InstructionName::LDX, AddressingMode::Immediate),
         0xA6 => Instruction::Official(InstructionName::LDX, AddressingMode::ZeroPage),
-        0xB6 => {
-            Instruction::Official(InstructionName::LDX, AddressingMode::ZeroPageIndexedWithY)
-        }
+        0xB6 => Instruction::Official(InstructionName::LDX, AddressingMode::ZeroPageIndexedWithY),
         // TXS
         0x9a => Instruction::Official(InstructionName::TXS, AddressingMode::Implied),
         // AND
         0x29 => Instruction::Official(InstructionName::AND, AddressingMode::Immediate),
         0x25 => Instruction::Official(InstructionName::AND, AddressingMode::ZeroPage),
-        0x35 => {
-            Instruction::Official(InstructionName::AND, AddressingMode::ZeroPageIndexedWithX)
-        }
+        0x35 => Instruction::Official(InstructionName::AND, AddressingMode::ZeroPageIndexedWithX),
         0x2D => Instruction::Official(InstructionName::AND, AddressingMode::Absolute),
-        0x3D => {
-            Instruction::Official(InstructionName::AND, AddressingMode::AbsoluteIndirectWithX)
-        }
-        0x39 => {
-            Instruction::Official(InstructionName::AND, AddressingMode::AbsoluteIndirectWithY)
-        }
+        0x3D => Instruction::Official(InstructionName::AND, AddressingMode::AbsoluteIndirectWithX),
+        0x39 => Instruction::Official(InstructionName::AND, AddressingMode::AbsoluteIndirectWithY),
         0x21 => Instruction::Official(
             InstructionName::AND,
             AddressingMode::ZeroPageIndexedIndirect,
@@ -194,9 +175,7 @@ pub fn match_instruction(opcode: u8) -> Instruction {
         // STX
         0x8E => Instruction::Official(InstructionName::STX, AddressingMode::Absolute),
         0x86 => Instruction::Official(InstructionName::STX, AddressingMode::ZeroPage),
-        0x96 => {
-            Instruction::Official(InstructionName::STX, AddressingMode::ZeroPageIndexedWithY)
-        }
+        0x96 => Instruction::Official(InstructionName::STX, AddressingMode::ZeroPageIndexedWithY),
         // JSR
         0x20 => Instruction::Official(InstructionName::JSR, AddressingMode::Absolute),
         // NOP
@@ -221,43 +200,29 @@ pub fn match_instruction(opcode: u8) -> Instruction {
         0x50 => Instruction::Official(InstructionName::BVC, AddressingMode::Relative),
         // LDY
         0xAC => Instruction::Official(InstructionName::LDY, AddressingMode::Absolute),
-        0xBC => {
-            Instruction::Official(InstructionName::LDY, AddressingMode::AbsoluteIndirectWithX)
-        }
+        0xBC => Instruction::Official(InstructionName::LDY, AddressingMode::AbsoluteIndirectWithX),
         0xA0 => Instruction::Official(InstructionName::LDY, AddressingMode::Immediate),
         0xA4 => Instruction::Official(InstructionName::LDY, AddressingMode::ZeroPage),
-        0xB4 => {
-            Instruction::Official(InstructionName::LDY, AddressingMode::ZeroPageIndexedWithX)
-        }
+        0xB4 => Instruction::Official(InstructionName::LDY, AddressingMode::ZeroPageIndexedWithX),
         // ASL
         0x0E => Instruction::Official(InstructionName::ASL, AddressingMode::Absolute),
-        0x1E => {
-            Instruction::Official(InstructionName::ASL, AddressingMode::AbsoluteIndirectWithX)
-        }
+        0x1E => Instruction::Official(InstructionName::ASL, AddressingMode::AbsoluteIndirectWithX),
         0x0A => Instruction::Official(InstructionName::ASL, AddressingMode::Accumulator),
         0x06 => Instruction::Official(InstructionName::ASL, AddressingMode::ZeroPage),
-        0x16 => {
-            Instruction::Official(InstructionName::ASL, AddressingMode::ZeroPageIndexedWithX)
-        }
+        0x16 => Instruction::Official(InstructionName::ASL, AddressingMode::ZeroPageIndexedWithX),
         // RTI
         0x40 => Instruction::Official(InstructionName::RTI, AddressingMode::Implied),
         // SBC
         0xED => Instruction::Official(InstructionName::SBC, AddressingMode::Absolute),
-        0xFD => {
-            Instruction::Official(InstructionName::SBC, AddressingMode::AbsoluteIndirectWithX)
-        }
-        0xF9 => {
-            Instruction::Official(InstructionName::SBC, AddressingMode::AbsoluteIndirectWithY)
-        }
+        0xFD => Instruction::Official(InstructionName::SBC, AddressingMode::AbsoluteIndirectWithX),
+        0xF9 => Instruction::Official(InstructionName::SBC, AddressingMode::AbsoluteIndirectWithY),
         0xE9 => Instruction::Official(InstructionName::SBC, AddressingMode::Immediate),
         0xE5 => Instruction::Official(InstructionName::SBC, AddressingMode::ZeroPage),
         0xE1 => Instruction::Official(
             InstructionName::SBC,
             AddressingMode::ZeroPageIndexedIndirect,
         ),
-        0xF5 => {
-            Instruction::Official(InstructionName::SBC, AddressingMode::ZeroPageIndexedWithX)
-        }
+        0xF5 => Instruction::Official(InstructionName::SBC, AddressingMode::ZeroPageIndexedWithX),
         0xF1 => Instruction::Official(
             InstructionName::SBC,
             AddressingMode::ZeroPageIndirectIndexedWithY,
@@ -266,21 +231,15 @@ pub fn match_instruction(opcode: u8) -> Instruction {
         0xF8 => Instruction::Official(InstructionName::SED, AddressingMode::Implied),
         // CMP
         0xCD => Instruction::Official(InstructionName::CMP, AddressingMode::Absolute),
-        0xDD => {
-            Instruction::Official(InstructionName::CMP, AddressingMode::AbsoluteIndirectWithX)
-        }
-        0xD9 => {
-            Instruction::Official(InstructionName::CMP, AddressingMode::AbsoluteIndirectWithY)
-        }
+        0xDD => Instruction::Official(InstructionName::CMP, AddressingMode::AbsoluteIndirectWithX),
+        0xD9 => Instruction::Official(InstructionName::CMP, AddressingMode::AbsoluteIndirectWithY),
         0xC9 => Instruction::Official(InstructionName::CMP, AddressingMode::Immediate),
         0xC5 => Instruction::Official(InstructionName::CMP, AddressingMode::ZeroPage),
         0xC1 => Instruction::Official(
             InstructionName::CMP,
             AddressingMode::ZeroPageIndexedIndirect,
         ),
-        0xD5 => {
-            Instruction::Official(InstructionName::CMP, AddressingMode::ZeroPageIndexedWithX)
-        }
+        0xD5 => Instruction::Official(InstructionName::CMP, AddressingMode::ZeroPageIndexedWithX),
         0xD1 => Instruction::Official(
             InstructionName::CMP,
             AddressingMode::ZeroPageIndirectIndexedWithY,
@@ -293,21 +252,15 @@ pub fn match_instruction(opcode: u8) -> Instruction {
         0x30 => Instruction::Official(InstructionName::BMI, AddressingMode::Relative),
         // ORA
         0x0D => Instruction::Official(InstructionName::ORA, AddressingMode::Absolute),
-        0x1D => {
-            Instruction::Official(InstructionName::ORA, AddressingMode::AbsoluteIndirectWithX)
-        }
-        0x19 => {
-            Instruction::Official(InstructionName::ORA, AddressingMode::AbsoluteIndirectWithY)
-        }
+        0x1D => Instruction::Official(InstructionName::ORA, AddressingMode::AbsoluteIndirectWithX),
+        0x19 => Instruction::Official(InstructionName::ORA, AddressingMode::AbsoluteIndirectWithY),
         0x09 => Instruction::Official(InstructionName::ORA, AddressingMode::Immediate),
         0x05 => Instruction::Official(InstructionName::ORA, AddressingMode::ZeroPage),
         0x01 => Instruction::Official(
             InstructionName::ORA,
             AddressingMode::ZeroPageIndexedIndirect,
         ),
-        0x15 => {
-            Instruction::Official(InstructionName::ORA, AddressingMode::ZeroPageIndexedWithX)
-        }
+        0x15 => Instruction::Official(InstructionName::ORA, AddressingMode::ZeroPageIndexedWithX),
         0x11 => Instruction::Official(
             InstructionName::ORA,
             AddressingMode::ZeroPageIndirectIndexedWithY,
@@ -316,42 +269,30 @@ pub fn match_instruction(opcode: u8) -> Instruction {
         0xB8 => Instruction::Official(InstructionName::CLV, AddressingMode::Implied),
         // EOR
         0x4D => Instruction::Official(InstructionName::EOR, AddressingMode::Absolute),
-        0x5D => {
-            Instruction::Official(InstructionName::EOR, AddressingMode::AbsoluteIndirectWithX)
-        }
-        0x59 => {
-            Instruction::Official(InstructionName::EOR, AddressingMode::AbsoluteIndirectWithY)
-        }
+        0x5D => Instruction::Official(InstructionName::EOR, AddressingMode::AbsoluteIndirectWithX),
+        0x59 => Instruction::Official(InstructionName::EOR, AddressingMode::AbsoluteIndirectWithY),
         0x49 => Instruction::Official(InstructionName::EOR, AddressingMode::Immediate),
         0x45 => Instruction::Official(InstructionName::EOR, AddressingMode::ZeroPage),
         0x41 => Instruction::Official(
             InstructionName::EOR,
             AddressingMode::ZeroPageIndexedIndirect,
         ),
-        0x55 => {
-            Instruction::Official(InstructionName::EOR, AddressingMode::ZeroPageIndexedWithX)
-        }
+        0x55 => Instruction::Official(InstructionName::EOR, AddressingMode::ZeroPageIndexedWithX),
         0x51 => Instruction::Official(
             InstructionName::EOR,
             AddressingMode::ZeroPageIndirectIndexedWithY,
         ),
         // ADC
         0x6D => Instruction::Official(InstructionName::ADC, AddressingMode::Absolute),
-        0x7D => {
-            Instruction::Official(InstructionName::ADC, AddressingMode::AbsoluteIndirectWithX)
-        }
-        0x79 => {
-            Instruction::Official(InstructionName::ADC, AddressingMode::AbsoluteIndirectWithY)
-        }
+        0x7D => Instruction::Official(InstructionName::ADC, AddressingMode::AbsoluteIndirectWithX),
+        0x79 => Instruction::Official(InstructionName::ADC, AddressingMode::AbsoluteIndirectWithY),
         0x69 => Instruction::Official(InstructionName::ADC, AddressingMode::Immediate),
         0x65 => Instruction::Official(InstructionName::ADC, AddressingMode::ZeroPage),
         0x61 => Instruction::Official(
             InstructionName::ADC,
             AddressingMode::ZeroPageIndexedIndirect,
         ),
-        0x75 => {
-            Instruction::Official(InstructionName::ADC, AddressingMode::ZeroPageIndexedWithX)
-        }
+        0x75 => Instruction::Official(InstructionName::ADC, AddressingMode::ZeroPageIndexedWithX),
         0x71 => Instruction::Official(
             InstructionName::ADC,
             AddressingMode::ZeroPageIndirectIndexedWithY,
@@ -359,9 +300,7 @@ pub fn match_instruction(opcode: u8) -> Instruction {
         // STY
         0x8C => Instruction::Official(InstructionName::STY, AddressingMode::Absolute),
         0x84 => Instruction::Official(InstructionName::STY, AddressingMode::ZeroPage),
-        0x94 => {
-            Instruction::Official(InstructionName::STY, AddressingMode::ZeroPageIndexedWithX)
-        }
+        0x94 => Instruction::Official(InstructionName::STY, AddressingMode::ZeroPageIndexedWithX),
         // INY
         0xC8 => Instruction::Official(InstructionName::INY, AddressingMode::Implied),
         // INX
@@ -379,42 +318,26 @@ pub fn match_instruction(opcode: u8) -> Instruction {
         // LSR
         0x4A => Instruction::Official(InstructionName::LSR, AddressingMode::Accumulator),
         0x46 => Instruction::Official(InstructionName::LSR, AddressingMode::ZeroPage),
-        0x56 => {
-            Instruction::Official(InstructionName::LSR, AddressingMode::ZeroPageIndexedWithX)
-        }
+        0x56 => Instruction::Official(InstructionName::LSR, AddressingMode::ZeroPageIndexedWithX),
         0x4E => Instruction::Official(InstructionName::LSR, AddressingMode::Absolute),
-        0x5E => {
-            Instruction::Official(InstructionName::LSR, AddressingMode::AbsoluteIndirectWithX)
-        }
+        0x5E => Instruction::Official(InstructionName::LSR, AddressingMode::AbsoluteIndirectWithX),
         // ROR
         0x6A => Instruction::Official(InstructionName::ROR, AddressingMode::Accumulator),
         0x66 => Instruction::Official(InstructionName::ROR, AddressingMode::ZeroPage),
-        0x76 => {
-            Instruction::Official(InstructionName::ROR, AddressingMode::ZeroPageIndexedWithX)
-        }
+        0x76 => Instruction::Official(InstructionName::ROR, AddressingMode::ZeroPageIndexedWithX),
         0x6E => Instruction::Official(InstructionName::ROR, AddressingMode::Absolute),
-        0x7E => {
-            Instruction::Official(InstructionName::ROR, AddressingMode::AbsoluteIndirectWithX)
-        }
+        0x7E => Instruction::Official(InstructionName::ROR, AddressingMode::AbsoluteIndirectWithX),
         // ROL
         0x2A => Instruction::Official(InstructionName::ROL, AddressingMode::Accumulator),
         0x26 => Instruction::Official(InstructionName::ROL, AddressingMode::ZeroPage),
-        0x36 => {
-            Instruction::Official(InstructionName::ROL, AddressingMode::ZeroPageIndexedWithX)
-        }
+        0x36 => Instruction::Official(InstructionName::ROL, AddressingMode::ZeroPageIndexedWithX),
         0x2E => Instruction::Official(InstructionName::ROL, AddressingMode::Absolute),
-        0x3E => {
-            Instruction::Official(InstructionName::ROL, AddressingMode::AbsoluteIndirectWithX)
-        }
+        0x3E => Instruction::Official(InstructionName::ROL, AddressingMode::AbsoluteIndirectWithX),
         // DEC
         0xC6 => Instruction::Official(InstructionName::DEC, AddressingMode::ZeroPage),
-        0xD6 => {
-            Instruction::Official(InstructionName::DEC, AddressingMode::ZeroPageIndexedWithX)
-        }
+        0xD6 => Instruction::Official(InstructionName::DEC, AddressingMode::ZeroPageIndexedWithX),
         0xCE => Instruction::Official(InstructionName::DEC, AddressingMode::Absolute),
-        0xDE => {
-            Instruction::Official(InstructionName::DEC, AddressingMode::AbsoluteIndirectWithX)
-        }
+        0xDE => Instruction::Official(InstructionName::DEC, AddressingMode::AbsoluteIndirectWithX),
 
         // UNOFFICIAL OPCODES
         // NOP
@@ -422,24 +345,12 @@ pub fn match_instruction(opcode: u8) -> Instruction {
         0x44 => Instruction::Unofficial(InstructionName::NOP, AddressingMode::ZeroPage),
         0x64 => Instruction::Unofficial(InstructionName::NOP, AddressingMode::ZeroPage),
         0x0C => Instruction::Unofficial(InstructionName::NOP, AddressingMode::Absolute),
-        0x14 => {
-            Instruction::Unofficial(InstructionName::NOP, AddressingMode::ZeroPageIndexedWithX)
-        }
-        0x34 => {
-            Instruction::Unofficial(InstructionName::NOP, AddressingMode::ZeroPageIndexedWithX)
-        }
-        0x54 => {
-            Instruction::Unofficial(InstructionName::NOP, AddressingMode::ZeroPageIndexedWithX)
-        }
-        0x74 => {
-            Instruction::Unofficial(InstructionName::NOP, AddressingMode::ZeroPageIndexedWithX)
-        }
-        0xd4 => {
-            Instruction::Unofficial(InstructionName::NOP, AddressingMode::ZeroPageIndexedWithX)
-        }
-        0xF4 => {
-            Instruction::Unofficial(InstructionName::NOP, AddressingMode::ZeroPageIndexedWithX)
-        }
+        0x14 => Instruction::Unofficial(InstructionName::NOP, AddressingMode::ZeroPageIndexedWithX),
+        0x34 => Instruction::Unofficial(InstructionName::NOP, AddressingMode::ZeroPageIndexedWithX),
+        0x54 => Instruction::Unofficial(InstructionName::NOP, AddressingMode::ZeroPageIndexedWithX),
+        0x74 => Instruction::Unofficial(InstructionName::NOP, AddressingMode::ZeroPageIndexedWithX),
+        0xd4 => Instruction::Unofficial(InstructionName::NOP, AddressingMode::ZeroPageIndexedWithX),
+        0xF4 => Instruction::Unofficial(InstructionName::NOP, AddressingMode::ZeroPageIndexedWithX),
         0x1A => Instruction::Unofficial(InstructionName::NOP, AddressingMode::Implied),
         0x3A => Instruction::Unofficial(InstructionName::NOP, AddressingMode::Implied),
         0x5A => Instruction::Unofficial(InstructionName::NOP, AddressingMode::Implied),
@@ -476,9 +387,7 @@ pub fn match_instruction(opcode: u8) -> Instruction {
             InstructionName::LAX,
             AddressingMode::ZeroPageIndirectIndexedWithY,
         ),
-        0xB7 => {
-            Instruction::Unofficial(InstructionName::LAX, AddressingMode::ZeroPageIndexedWithY)
-        }
+        0xB7 => Instruction::Unofficial(InstructionName::LAX, AddressingMode::ZeroPageIndexedWithY),
         0xBF => {
             Instruction::Unofficial(InstructionName::LAX, AddressingMode::AbsoluteIndirectWithY)
         }
@@ -489,9 +398,7 @@ pub fn match_instruction(opcode: u8) -> Instruction {
         ),
         0x87 => Instruction::Unofficial(InstructionName::SAX, AddressingMode::ZeroPage),
         0x8F => Instruction::Unofficial(InstructionName::SAX, AddressingMode::Absolute),
-        0x97 => {
-            Instruction::Unofficial(InstructionName::SAX, AddressingMode::ZeroPageIndexedWithY)
-        }
+        0x97 => Instruction::Unofficial(InstructionName::SAX, AddressingMode::ZeroPageIndexedWithY),
         // SBC
         0xEB => Instruction::Unofficial(InstructionName::SBC, AddressingMode::Immediate),
         // DCP
@@ -507,9 +414,7 @@ pub fn match_instruction(opcode: u8) -> Instruction {
         0xDB => {
             Instruction::Unofficial(InstructionName::DCP, AddressingMode::AbsoluteIndirectWithY)
         }
-        0xD7 => {
-            Instruction::Unofficial(InstructionName::DCP, AddressingMode::ZeroPageIndexedWithX)
-        }
+        0xD7 => Instruction::Unofficial(InstructionName::DCP, AddressingMode::ZeroPageIndexedWithX),
         0xD3 => Instruction::Unofficial(
             InstructionName::DCP,
             AddressingMode::ZeroPageIndirectIndexedWithY,
@@ -525,9 +430,7 @@ pub fn match_instruction(opcode: u8) -> Instruction {
             InstructionName::ISB,
             AddressingMode::ZeroPageIndirectIndexedWithY,
         ),
-        0xF7 => {
-            Instruction::Unofficial(InstructionName::ISB, AddressingMode::ZeroPageIndexedWithX)
-        }
+        0xF7 => Instruction::Unofficial(InstructionName::ISB, AddressingMode::ZeroPageIndexedWithX),
         0xFB => {
             Instruction::Unofficial(InstructionName::ISB, AddressingMode::AbsoluteIndirectWithY)
         }
@@ -541,9 +444,7 @@ pub fn match_instruction(opcode: u8) -> Instruction {
         ),
         0x07 => Instruction::Unofficial(InstructionName::SLO, AddressingMode::ZeroPage),
         0x0F => Instruction::Unofficial(InstructionName::SLO, AddressingMode::Absolute),
-        0x17 => {
-            Instruction::Unofficial(InstructionName::SLO, AddressingMode::ZeroPageIndexedWithX)
-        }
+        0x17 => Instruction::Unofficial(InstructionName::SLO, AddressingMode::ZeroPageIndexedWithX),
         0x1F => {
             Instruction::Unofficial(InstructionName::SLO, AddressingMode::AbsoluteIndirectWithX)
         }
@@ -556,9 +457,7 @@ pub fn match_instruction(opcode: u8) -> Instruction {
         ),
         // RLA
         0x27 => Instruction::Unofficial(InstructionName::RLA, AddressingMode::ZeroPage),
-        0x37 => {
-            Instruction::Unofficial(InstructionName::RLA, AddressingMode::ZeroPageIndexedWithX)
-        }
+        0x37 => Instruction::Unofficial(InstructionName::RLA, AddressingMode::ZeroPageIndexedWithX),
         0x2F => Instruction::Unofficial(InstructionName::RLA, AddressingMode::Absolute),
         0x3F => {
             Instruction::Unofficial(InstructionName::RLA, AddressingMode::AbsoluteIndirectWithX)
@@ -576,9 +475,7 @@ pub fn match_instruction(opcode: u8) -> Instruction {
         ),
         // SRE
         0x47 => Instruction::Unofficial(InstructionName::SRE, AddressingMode::ZeroPage),
-        0x57 => {
-            Instruction::Unofficial(InstructionName::SRE, AddressingMode::ZeroPageIndexedWithX)
-        }
+        0x57 => Instruction::Unofficial(InstructionName::SRE, AddressingMode::ZeroPageIndexedWithX),
         0x4F => Instruction::Unofficial(InstructionName::SRE, AddressingMode::Absolute),
         0x5F => {
             Instruction::Unofficial(InstructionName::SRE, AddressingMode::AbsoluteIndirectWithX)
@@ -596,9 +493,7 @@ pub fn match_instruction(opcode: u8) -> Instruction {
         ),
         // RRA
         0x67 => Instruction::Unofficial(InstructionName::RRA, AddressingMode::ZeroPage),
-        0x77 => {
-            Instruction::Unofficial(InstructionName::RRA, AddressingMode::ZeroPageIndexedWithX)
-        }
+        0x77 => Instruction::Unofficial(InstructionName::RRA, AddressingMode::ZeroPageIndexedWithX),
         0x6F => Instruction::Unofficial(InstructionName::RRA, AddressingMode::Absolute),
         0x7F => {
             Instruction::Unofficial(InstructionName::RRA, AddressingMode::AbsoluteIndirectWithX)
@@ -619,6 +514,9 @@ pub fn match_instruction(opcode: u8) -> Instruction {
     }
 }
 
+/// Set Interrupt Disable (SEI)
+///
+/// Status I flag is set to 1
 pub fn sei(registers: &mut Registers) {
     registers.status |= 0b00000100;
 }
@@ -631,6 +529,9 @@ fn sei_test() {
     assert_eq!(registers.status, 0b00000100);
 }
 
+/// Clear Decimal Mode (CLD)
+///
+/// Status D flag is set to 0
 pub fn cld(registers: &mut Registers) {
     registers.status &= 0b11110111;
 }
@@ -644,6 +545,10 @@ fn cld_test() {
     assert_eq!(registers.status, 0b00000000);
 }
 
+/// Load Accumulator (LDA)
+///
+/// Loads a byte of memory into the accumulator.
+/// Sets the zero and negative flags as appropriate.
 pub fn lda(registers: &mut Registers, operand: u8) {
     registers.a = operand as u8;
     registers.set_flag(StatusFlag::Z, registers.a == 0);
@@ -670,6 +575,12 @@ fn lda_test() {
     assert_eq!(registers.status & 0b10000000, 0b10000000);
 }
 
+/// Force Interrupt (BRK)
+///
+/// The BRK instruction forces the generation of an interrupt request.
+/// The program counter and processor status are pushed on the stack then
+/// the IRQ interrupt vector at $FFFE/F is loaded into the PC
+/// and the break flag in the status set to one.
 pub fn brk(registers: &mut Registers, memory: &mut Memory) {
     registers.pc += 1;
     memory.stack_push(((registers.pc >> 8) & 0xFF) as u8);
@@ -701,6 +612,9 @@ fn brk_test() {
     assert_eq!(registers.pc, 0x42);
 }
 
+/// Store Accumulator (STA)
+///
+/// Stores the contents of the accumulator into memory.
 pub fn sta(registers: &mut Registers, memory: &mut Memory, addr: u16) {
     memory.memory[addr as usize] = registers.a;
 }
@@ -715,6 +629,10 @@ fn sta_test() {
     assert_eq!(memory.memory[0x12], 0x42);
 }
 
+/// Increment Memory (INC)
+///
+/// Adds one to the value held at a specified memory location.
+/// Sets the zero and negative flags as appropriate.
 pub fn inc(registers: &mut Registers, memory: &mut Memory, addr: u16) {
     let operand = memory.memory[addr as usize] as u16;
     if operand == 0xFF {
@@ -748,6 +666,10 @@ fn inc_test() {
     assert_eq!(memory.memory[0x0], 42);
 }
 
+/// Load X Register (LDX)
+///
+/// Loads a byte of memory into the X register
+/// Sets the zero and negative flags as appropriate.
 pub fn ldx(registers: &mut Registers, addr: u16) {
     registers.x = addr as u8;
     registers.set_flag(StatusFlag::Z, registers.x == 0);
@@ -771,6 +693,9 @@ fn ldx_test() {
     assert_eq!(registers.status & 0b10000000, 0b10000000);
 }
 
+/// Transfer X to stack pointer (TXS)
+///
+/// Copies the current contents of the X register into the stack register.
 pub fn txs(registers: &mut Registers, memory: &mut Memory) {
     memory.stack_pointer = registers.x as u16;
 }
@@ -787,6 +712,9 @@ fn txs_test() {
     assert_eq!(memory.stack_pointer, 42);
 }
 
+/// Logical And (AND)
+///
+/// A logical AND is performed, bit by bit, on the accumulator contents using the contents of a byte of memory.
 pub fn and(registers: &mut Registers, value: u8) {
     registers.a &= value;
 
@@ -794,6 +722,9 @@ pub fn and(registers: &mut Registers, value: u8) {
     registers.set_flag(StatusFlag::N, registers.a >= 0x80);
 }
 
+/// Logical And (AND) with immediate value
+///
+/// A logical AND is performed, bit by bit, on the accumulator contents using the immediate value.
 pub fn and_acc(registers: &mut Registers) {
     registers.a &= registers.a;
     registers.set_flag(StatusFlag::Z, registers.a == 0);
@@ -820,6 +751,9 @@ fn and_test() {
     assert_eq!(registers.a, 0x6F);
 }
 
+/// Branch If Equal (BEQ)
+///
+/// If the carry flag is set then add the relative displacement to the program counter to cause a branch to a new location.
 #[must_use]
 pub fn beq(registers: &mut Registers, value: u16) -> bool {
     // Check if zero flag is enabled
@@ -858,6 +792,10 @@ fn beq_test() {
     assert_eq!(registers.pc, 0x42);
 }
 
+/// Compare X Register (CPX)
+///
+/// This instruction compares the contents of the X register with another memory held value.
+/// Sets the zero and carry flags as appropriate.
 pub fn cpx(registers: &mut Registers, value: u8) {
     registers.set_flag(StatusFlag::C, false);
     registers.set_flag(StatusFlag::Z, false);
@@ -907,6 +845,10 @@ fn cpx_test() {
     assert_eq!(registers.status, 0b10000001);
 }
 
+///  Decrement Y Register (DEY)
+///
+/// Subtracts one from the Y register.
+/// Sets the zero and negative flags as appropriate.
 pub fn dey(registers: &mut Registers) {
     registers.y = (registers.y as i16 - 1) as u8;
 
@@ -937,6 +879,9 @@ fn dey_test() {
     assert_eq!(registers.y, 0xFF);
 }
 
+/// Branch if Positive (BPL)
+///
+/// If the negative flag is clear then add the relative displacement to the program counter to cause a branch to a new location.
 #[must_use]
 pub fn bpl(registers: &mut Registers, value: u16) -> bool {
     if !registers.is_flag_set(StatusFlag::N) {
@@ -967,6 +912,10 @@ fn bpl_test() {
     assert_eq!(registers.y, 0xFF);
 }
 
+/// Pull Accumulator (PLA)
+///
+/// Pulls an 8 bit value from the stack and into the accumulator.
+/// The zero and negative flags are set as appropriate.
 pub fn pla(registers: &mut Registers, memory: &mut Memory) {
     registers.a = memory.stack_pop();
 
@@ -994,6 +943,10 @@ fn pla_test() {
     assert_eq!(registers.status, 0x6D);
 }
 
+/// Transfer Accumulator to Y (TAY)
+///
+/// Copies the current contents of the accumulator into the X register.
+/// Sets the zero and negative flags as appropriate.
 pub fn tay(registers: &mut Registers) {
     registers.y = registers.a;
     registers.set_flag(StatusFlag::Z, registers.a == 0);
@@ -1016,6 +969,10 @@ fn tay_test() {
     assert_eq!(registers.y, 0x99);
 }
 
+/// Compare Y Register (CPY)
+///
+/// This instruction compares the contents of the Y register with another memory held value.
+/// Sets the zero and carry flags as appropriate.
 pub fn cpy(registers: &mut Registers, value: u8) {
     registers.set_flag(StatusFlag::C, false);
     registers.set_flag(StatusFlag::Z, false);
@@ -1060,6 +1017,9 @@ fn cpy_test() {
     assert_eq!(registers.status, 0b10000001);
 }
 
+/// Branch if Not Equal (BNE)
+///
+/// If the zero flag is clear then add the relative displacement to the program counter to cause a branch to a new location.
 #[must_use]
 pub fn bne(registers: &mut Registers, value: u16) -> bool {
     // Check if zero flag is not enabled
@@ -1098,6 +1058,10 @@ fn bne_test() {
     assert_eq!(registers.pc, 0xC95E);
 }
 
+/// Return from Subroutine (RTS)
+///
+/// Used at the end of a subroutine to return to the calling routine.
+/// It pulls the program counter (minus one) from the stack.
 pub fn rts(registers: &mut Registers, memory: &mut Memory) {
     let low = memory.stack_pop();
     let high = memory.stack_pop();
@@ -1119,6 +1083,9 @@ fn rts_test() {
     assert_eq!(registers.pc, 0x5);
 }
 
+/// Jump (JMP)
+///
+/// Sets the program counter to the address specified by the operand.
 pub fn jmp(registers: &mut Registers, addr: u16) {
     registers.pc = addr;
 }
@@ -1132,6 +1099,9 @@ fn jmp_test() {
     assert_eq!(registers.pc, 0x42);
 }
 
+/// Store X Register (STX)
+///
+/// Stores the contents of the X register into memory.
 pub fn stx(registers: &mut Registers, memory: &mut Memory, addr: u16) {
     memory.memory[addr as usize] = registers.x;
 }
@@ -1147,6 +1117,10 @@ fn stx_test() {
     assert_eq!(memory.memory[0x30], 0x42);
 }
 
+/// Jump to Subroutine (JSR)
+///
+/// Pushes the address (minus one) of the return point on to the stack.
+/// Sets the program counter to the target memory address.
 pub fn jsr(registers: &mut Registers, memory: &mut Memory, addr: u16) {
     registers.pc += 1;
     memory.stack_push(((registers.pc >> 8) & 0xFF) as u8);
@@ -1164,6 +1138,9 @@ fn jsr_test() {
     assert_eq!(registers.pc, 0x100);
 }
 
+/// No Operation (NOP)
+///
+/// The NOP instruction causes no changes to the processor other than the normal incrementing of the program counter to the next instruction.
 pub fn nop() {}
 
 #[test]
@@ -1171,6 +1148,9 @@ fn nop_test() {
     // HOW CAN I TEST THIS :D
 }
 
+/// Set Carry Flag (SEC)
+///
+/// Set the carry flag to one.
 pub fn sec(registers: &mut Registers) {
     registers.status |= 0x1;
 }
@@ -1184,6 +1164,9 @@ fn sec_test() {
     assert_eq!(registers.status & 0x1, 0x1);
 }
 
+///  Branch if Carry Set (BCS)
+///
+/// If the carry flag is set then add the relative displacement to the program counter to cause a branch to a new location.
 #[must_use]
 pub fn bcs(registers: &mut Registers, addr: u16) -> bool {
     if registers.is_flag_set(StatusFlag::C) {
@@ -1217,6 +1200,9 @@ fn bcs_test() {
     assert_eq!(registers.pc, 0xC735);
 }
 
+/// Clear Carry Flag (CLC)
+///
+/// Set the carry flag to zero.
 pub fn clc(registers: &mut Registers) {
     registers.status &= 0b11111110;
 }
@@ -1230,6 +1216,9 @@ fn clc_test() {
     assert_eq!(registers.status, 0x0);
 }
 
+/// Branch if Carry Clear (BCC)
+///
+/// If the carry flag is clear then add the relative displacement to the program counter to cause a branch to a new location.
 #[must_use]
 pub fn bcc(registers: &mut Registers, addr: u16) -> bool {
     if !registers.is_flag_set(StatusFlag::C) {
@@ -1266,6 +1255,9 @@ fn bcc_test() {
     assert_eq!(registers.pc, 0xC753);
 }
 
+/// Push Processor Status (PHP)
+///
+/// Pushes a copy of the status flags on to the stack.
 pub fn php(registers: &mut Registers, memory: &mut Memory) {
     registers.set_flag(StatusFlag::B, true);
     registers.set_flag(StatusFlag::Unused, true);
@@ -1284,6 +1276,11 @@ fn php_test() {
     assert_eq!(memory.memory[0x01FF], 0b10111010);
 }
 
+/// Bit Test (BIT)
+///
+/// This instructions is used to test if one or more bits are set in a target memory location. 
+/// The mask pattern in A is ANDed with the value in memory to set or clear the zero flag, but the result is not kept. 
+/// Bits 7 and 6 of the value from memory are copied into the N and V flags.
 pub fn bit(registers: &mut Registers, memory: &mut Memory, addr: u16) {
     let m = memory.memory[addr as usize];
     let test = registers.a & m;
@@ -1319,6 +1316,9 @@ fn bit_test() {
     assert_eq!(registers.status, 0b11000000);
 }
 
+/// Branch if Overflow Set (BVS)
+///
+/// If the overflow flag is set then add the relative displacement to the program counter to cause a branch to a new location.
 pub fn bvs(registers: &mut Registers, addr: u16) -> bool {
     if registers.is_flag_set(StatusFlag::V) {
         if addr >= 0x80 {
@@ -1347,6 +1347,9 @@ fn bvs_test() {
     assert_eq!(registers.pc, 0x44);
 }
 
+/// Branch if Overflow Clear (BVC)
+///
+/// If the overflow flag is clear then add the relative displacement to the program counter to cause a branch to a new location.
 pub fn bvc(registers: &mut Registers, addr: u16) -> bool {
     if !registers.is_flag_set(StatusFlag::V) {
         if addr >= 0x80 {
@@ -1377,6 +1380,9 @@ fn bvc_test() {
     assert_eq!(registers.pc, 0x44);
 }
 
+/// Load Y Register (LDY)
+///
+/// Loads a byte of memory into the Y register setting the zero and negative flags as appropriate.
 pub fn ldy(registers: &mut Registers, operand: u8) {
     registers.y = operand;
     registers.set_flag(StatusFlag::Z, operand == 0);
@@ -1399,6 +1405,11 @@ fn ldy_test() {
     assert_eq!(registers.status & 0b10000000, 0b10000000);
 }
 
+/// Arithmetic Shift Left (ASL)
+///
+/// This operation shifts all the bits of the memory contents one bit left. 
+/// Bit 0 is set to 0 and bit 7 is placed in the carry flag. 
+/// The effect of this operation is to multiply the memory contents by 2 (ignoring 2's complement considerations), setting the carry if the result will not fit in 8 bits.
 pub fn asl(registers: &mut Registers, memory: &mut Memory, addr: u16, val: u8) {
     let mut m = val;
     let c = (m & 0b10000000) as u8 == 0b10000000;
@@ -1411,6 +1422,11 @@ pub fn asl(registers: &mut Registers, memory: &mut Memory, addr: u16, val: u8) {
     registers.set_flag(StatusFlag::C, c);
 }
 
+/// Arithmetic Shift Left (ASL) with accumulator
+///
+/// This operation shifts all the bits of the accumulator contents one bit left. 
+/// Bit 0 is set to 0 and bit 7 is placed in the carry flag. 
+/// The effect of this operation is to multiply the memory contents by 2 (ignoring 2's complement considerations), setting the carry if the result will not fit in 8 bits.
 pub fn asl_acc(registers: &mut Registers) {
     let mut m = registers.a;
     let c = (m & 0b10000000) as u8 == 0b10000000;
@@ -1431,6 +1447,10 @@ fn asl_test() {
     assert_eq!(memory.memory[0x2], 0x4);
 }
 
+/// Return from Interrupt (RTI)
+///
+/// The RTI instruction is used at the end of an interrupt processing routine.
+/// It pulls the processor flags from the stack followed by the program counter.
 pub fn rti(registers: &mut Registers, memory: &mut Memory) {
     let status = memory.stack_pop();
     let pc_lsb = memory.stack_pop();
@@ -1471,6 +1491,10 @@ fn rti_test() {
     assert_eq!(registers.pc, 0xCECE);
 }
 
+/// Subtract with Carry (SBC)
+///
+/// This instruction subtracts the contents of a memory location to the accumulator together with the not of the carry bit. 
+/// If overflow occurs the carry bit is clear, this enables multiple byte subtraction to be performed.
 pub fn sbc(registers: &mut Registers, value: u8) {
     adc(registers, !value);
 }
@@ -1494,6 +1518,9 @@ fn sbc_test() {
     assert_eq!(registers.status, 0xA4);
 }
 
+/// Set Decimal Flag (SED)
+///
+/// Set the decimal mode flag to one.
 pub fn sed(registers: &mut Registers) {
     registers.set_flag(StatusFlag::D, true);
 }
@@ -1505,6 +1532,10 @@ fn sed_test() {
     sed(&mut registers);
     assert_eq!(registers.status, 0x8)
 }
+
+/// Compare (CMP)
+///
+/// This instruction compares the contents of the accumulator with another memory held value and sets the zero and carry flags as appropriate.
 
 pub fn cmp(registers: &mut Registers, value: u8) {
     registers.set_flag(StatusFlag::N, false);
@@ -1572,6 +1603,9 @@ fn cmp_test() {
     assert_eq!(registers.status, 0x27);
 }
 
+/// Push Accumulator (PHA)
+///
+/// Pushes a copy of the accumulator on to the stack.
 pub fn pha(registers: &mut Registers, memory: &mut Memory) {
     memory.stack_push(registers.a);
 }
@@ -1586,6 +1620,10 @@ fn pha_test() {
     assert_eq!(memory.stack_pop(), 0x42);
 }
 
+/// Pull Processor Status (PLP)
+///
+/// Pulls an 8 bit value from the stack and into the processor flags. 
+/// The flags will take on new states as determined by the value pulled.
 pub fn plp(registers: &mut Registers, memory: &mut Memory) {
     let old_registers = registers.clone();
     registers.status = memory.stack_pop();
@@ -1612,6 +1650,9 @@ fn plp_test() {
     assert_eq!(registers.status, 0xEF);
 }
 
+/// Branch if Minus (BMI)
+///
+/// If the negative flag is set then add the relative displacement to the program counter to cause a branch to a new location.
 #[must_use]
 pub fn bmi(registers: &mut Registers, addr: u16) -> bool {
     if registers.is_flag_set(StatusFlag::N) {
@@ -1639,6 +1680,9 @@ fn bmi_test() {
     assert_eq!(registers.pc, 0x43);
 }
 
+///  Logical Inclusive OR (OR)
+///
+/// An inclusive OR is performed, bit by bit, on the accumulator contents using the contents of a byte of memory.
 pub fn ora(registers: &mut Registers, value: u8) {
     registers.a |= value;
     registers.set_flag(StatusFlag::Z, registers.a == 0);
@@ -1663,6 +1707,9 @@ fn ora_test() {
     assert_eq!(registers.a, 0b11);
 }
 
+/// Clear Overflow Flag (CLV)
+/// 
+/// Clears the overflow flag.
 pub fn clv(registers: &mut Registers) {
     registers.set_flag(StatusFlag::V, false);
 }
@@ -1676,6 +1723,9 @@ fn clv_test() {
     assert_eq!(registers.is_flag_set(StatusFlag::V), false);
 }
 
+/// Exclusive OR (EOR)
+///
+/// An exclusive OR is performed, bit by bit, on the accumulator contents using the contents of a byte of memory.
 pub fn eor(registers: &mut Registers, value: u8) {
     registers.a ^= value;
 
@@ -1700,6 +1750,10 @@ fn eor_test() {
     assert_eq!(registers.a, 0xF5);
 }
 
+/// Add with Carry (ADC)
+///
+/// This instruction adds the contents of a memory location to the accumulator together with the carry bit. 
+/// If overflow occurs the carry bit is set, this enables multiple byte addition to be performed.
 pub fn adc(registers: &mut Registers, value: u8) {
     // ~CARRY
     let carry = if registers.is_flag_set(StatusFlag::C) {
@@ -1769,6 +1823,9 @@ fn adc_test() {
     assert_eq!(registers.status, 0x2C);
 }
 
+/// Store Y Register (STY)
+///
+/// Stores the contents of the Y register into memory.
 pub fn sty(registers: &mut Registers, memory: &mut Memory, addr: u16) {
     memory.memory[addr as usize] = registers.y;
 }
@@ -1784,6 +1841,9 @@ fn sty_test() {
     assert_eq!(memory.memory[0x30], 0x42);
 }
 
+/// Increment Y Register (INY)
+///
+/// Adds one to the Y register setting the zero and negative flags as appropriate.
 pub fn iny(registers: &mut Registers) {
     let operand = registers.y as u16;
     if operand == 0xFF {
@@ -1816,6 +1876,9 @@ fn iny_test() {
     assert_eq!(registers.y, 42);
 }
 
+/// Increment X Register (INX)
+///
+/// Adds one to the X register setting the zero and negative flags as appropriate.
 pub fn inx(registers: &mut Registers) {
     let operand = registers.x as u16;
     if operand == 0xFF {
@@ -1848,6 +1911,9 @@ fn inx_test() {
     assert_eq!(registers.x, 42);
 }
 
+/// Transfer Accumulator to X (TAX)
+///
+/// Copies the current contents of the accumulator into the X register and sets the zero and negative flags as appropriate.
 pub fn tax(registers: &mut Registers) {
     registers.x = registers.a;
 
@@ -1875,6 +1941,9 @@ fn tax_test() {
     assert_eq!(registers.x, 42);
 }
 
+/// Transfer Y to Accumulator (TYA)
+///
+/// Copies the current contents of the Y register into the accumulator and sets the zero and negative flags as appropriate.
 pub fn tya(registers: &mut Registers) {
     registers.a = registers.y;
 
@@ -1902,6 +1971,9 @@ fn tya_test() {
     assert_eq!(registers.a, 42);
 }
 
+/// Transfer X to Accumulator
+/// 
+/// Copies the current contents of the X register into the accumulator and sets the zero and negative flags as appropriate.
 pub fn txa(registers: &mut Registers) {
     registers.a = registers.x;
 
@@ -1929,6 +2001,9 @@ fn txa_test() {
     assert_eq!(registers.a, 42);
 }
 
+/// Transfer Stack Pointer to X (TSX)
+///
+/// Copies the current contents of the stack register into the X register and sets the zero and negative flags as appropriate.
 pub fn tsx(registers: &mut Registers, memory: &mut Memory) {
     registers.x = memory.stack_pointer as u8;
 
@@ -1946,6 +2021,9 @@ fn tsx_test() {
     assert_eq!(registers.x, memory.stack_pointer as u8);
 }
 
+/// Decrement X Register (DEX)
+///
+/// Subtracts one from the X register setting the zero and negative flags as appropriate.
 pub fn dex(registers: &mut Registers) {
     registers.x = (registers.x as i16 - 1) as u8;
     registers.set_flag(StatusFlag::Z, registers.x == 0);
@@ -1966,6 +2044,10 @@ fn dex_test() {
     assert_eq!(registers.status, 0b00000000);
 }
 
+/// Logical Shift Right (LSR)
+/// 
+/// Each of the bits in M is shift one place to the right. 
+/// The bit that was in bit 0 is shifted into the carry flag. Bit 7 is set to zero.
 pub fn lsr(registers: &mut Registers, memory: &mut Memory, addr: u16) {
     let m = memory.memory[addr as usize];
     let carry = m as u8 & 0b1 == 0b1;
@@ -1976,6 +2058,10 @@ pub fn lsr(registers: &mut Registers, memory: &mut Memory, addr: u16) {
     registers.set_flag(StatusFlag::N, m >= 0x80);
 }
 
+/// Logical Shift Right (LSR) with accumulator
+/// 
+/// Each of the bits in A is shift one place to the right. 
+/// The bit that was in bit 0 is shifted into the carry flag. Bit 7 is set to zero.
 pub fn lsr_acc(registers: &mut Registers) {
     let m = registers.a;
     let carry = m as u8 & 0b1 == 0b1;
@@ -2000,6 +2086,10 @@ fn lsr_test() {
     assert_eq!(registers.a, 0x2);
 }
 
+/// Rotate Right (ROR)
+///
+/// Move each of the bits in either M one place to the right. 
+/// Bit 7 is filled with the current value of the carry flag whilst the old bit 0 becomes the new carry flag value.
 pub fn ror(registers: &mut Registers, memory: &mut Memory, addr: u16) {
     let m = memory.memory[addr as usize];
     let bit0 = m as u8 & 0b1 == 0b1;
@@ -2012,6 +2102,10 @@ pub fn ror(registers: &mut Registers, memory: &mut Memory, addr: u16) {
     registers.set_flag(StatusFlag::N, m >= 0x80);
 }
 
+/// Rotate Right (ROR) with accumulator
+///
+/// Move each of the bits in either A one place to the right. 
+/// Bit 7 is filled with the current value of the carry flag whilst the old bit 0 becomes the new carry flag value.
 pub fn ror_acc(registers: &mut Registers) {
     let m = registers.a;
     let bit0 = m as u8 & 0b1 == 0b1;
@@ -2043,6 +2137,10 @@ fn ror_test() {
     assert_eq!(registers.a, 0x82);
 }
 
+/// Rotate Left (ROL)
+///
+/// Move each of the bits in either M one place to the left. 
+/// Bit 0 is filled with the current value of the carry flag whilst the old bit 7 becomes the new carry flag value.
 pub fn rol(registers: &mut Registers, memory: &mut Memory, addr: u16, value: u8) {
     let m = value;
     let bit7 = m as u8 & 0b10000000 == 0b10000000;
@@ -2055,6 +2153,10 @@ pub fn rol(registers: &mut Registers, memory: &mut Memory, addr: u16, value: u8)
     registers.set_flag(StatusFlag::N, m >= 0x80);
 }
 
+/// Rotate Left (ROL) with accumulator
+///
+/// Move each of the bits in either A one place to the left. 
+/// Bit 0 is filled with the current value of the carry flag whilst the old bit 7 becomes the new carry flag value.
 pub fn rol_acc(registers: &mut Registers) {
     let m = registers.a;
     let bit7 = m as u8 & 0b10000000 == 0b10000000;
@@ -2086,6 +2188,9 @@ fn rol_test() {
     assert_eq!(registers.a, 0x9);
 }
 
+/// Decrement Memory (DEC)
+///
+/// Subtracts one from the value held at a specified memory location setting the zero and negative flags as appropriate.
 pub fn dec(registers: &mut Registers, memory: &mut Memory, addr: u16) {
     memory.memory[addr as usize] = memory.memory[addr as usize].wrapping_sub(1);
     registers.set_flag(StatusFlag::Z, memory.memory[addr as usize] == 0);

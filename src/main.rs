@@ -1,6 +1,12 @@
-use std::{fs::File, io::{BufRead, BufReader, Read, Write}, mem, thread::sleep, time::Duration};
+use std::{
+    fs::File,
+    io::{BufRead, BufReader, Read, Write},
+    mem,
+    thread::sleep,
+    time::Duration,
+};
 mod rp2a03;
-use rp2a03::{instructions::*, utils::RESET_VECTOR_ADDRESS, utils::*, Registers, *};
+use rp2a03::{instructions::*, utils::RESET_VECTOR_ADDRESS, utils::*, cpu::*};
 
 mod nes_rom;
 
@@ -116,6 +122,8 @@ fn main() {
     let mut count = 0;
 
     let mut cycle = 7;
+
+    let mut ppu_cycle = 21;
 
     loop {
         let byte = memory.memory[registers.pc as usize];
@@ -306,7 +314,7 @@ fn main() {
             };
 
             let res = format!(
-                "{:04X}  {:02X} {} {} {} {:27} A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X} PPU:  0, 21 CYC:{}",
+                "{:04X}  {:02X} {} {} {} {:27} A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X} PPU:{:3},{:3} CYC:{}",
                 registers.pc,
                 byte,
                 op1,
@@ -314,8 +322,8 @@ fn main() {
                 instr,
                 addressing_stuff,
                 registers.a, registers.x, registers.y, registers.status, memory.stack_pointer,
-                // 0, 0,
-                // " ",
+                0,
+                ppu_cycle,
                 cycle,
             );
 
@@ -759,45 +767,51 @@ fn main() {
 
         // PPU
 
-        // PPUCTRL register
-        let nmi_enable = memory.memory[0x2000] & 0b10000000 == 0b10000000;
-        let ppu_master_slave = memory.memory[0x2000] & 0b01000000 == 0b01000000;
-        let sprite_height = memory.memory[0x2000] & 0b00100000;
-        let background_tile_select = memory.memory[0x2000] & 0b00010000 == 0b00010000;
-        let sprite_tile_select = memory.memory[0x2000] & 0b00001000 == 0b00001000;
-        let increment_mode = memory.memory[0x2000] & 0b00000100 == 0b00000100;
-        let nametable_select = memory.memory[0x2000] & 0b11;
+        let get_oam_byte = |n: i32, m: i32| 4 * n + m;
 
-        // PPUMASK register
-        let color_emphasis = (memory.memory[0x2001] & 0b11100000) >> 5;
-        let sprite_enable = memory.memory[0x2001] & 0b10000 == 0b10000;
-        let background_enable = memory.memory[0x2001] & 0b1000 == 0b1000;
-        let sprite_left_column_enable = memory.memory[0x2001] & 0b100 == 0b100;
-        let background_left_column_enable = memory.memory[0x2001] & 0b10 == 0b10;
-        let greyscale = memory.memory[0x2001] & 0b1 == 0b1;
+        if mirror_addr == 0x2000 {
+            // PPUCTRL register
+            let nmi_enable = memory.memory[0x2000] & 0b10000000 == 0b10000000;
+            let ppu_master_slave = memory.memory[0x2000] & 0b01000000 == 0b01000000;
+            let sprite_height = memory.memory[0x2000] & 0b00100000;
+            let background_tile_select = memory.memory[0x2000] & 0b00010000 == 0b00010000;
+            let sprite_tile_select = memory.memory[0x2000] & 0b00001000 == 0b00001000;
+            let increment_mode = memory.memory[0x2000] & 0b00000100 == 0b00000100;
+            let nametable_select = memory.memory[0x2000] & 0b11;
+        } else if mirror_addr == 0x2001 {
+            // PPUMASK register
+            let color_emphasis = (memory.memory[0x2001] & 0b11100000) >> 5;
+            let sprite_enable = memory.memory[0x2001] & 0b10000 == 0b10000;
+            let background_enable = memory.memory[0x2001] & 0b1000 == 0b1000;
+            let sprite_left_column_enable = memory.memory[0x2001] & 0b100 == 0b100;
+            let background_left_column_enable = memory.memory[0x2001] & 0b10 == 0b10;
+            let greyscale = memory.memory[0x2001] & 0b1 == 0b1;
+        } else if mirror_addr == 0x2002 {
+            // PPUSTATUS register
+            let vblank = memory.memory[0x2002] & 0b10000000 == 0b10000000;
+            let sprite_0_hit = memory.memory[0x2002] & 0b1000000 == 0b1000000;
+            let sprite_overflow = memory.memory[0x2002] & 0b100000 == 0b100000;
+        } else if mirror_addr == 0x2003 {
+            // OAMADDR register
+            let oamaddr = memory.memory[0x2003];
+        } else if mirror_addr == 0x2004 {
+            // OAMDATA register
+            let oamdata = memory.memory[0x2004];
+        } else if mirror_addr == 0x2005 {
+            // PPUSCROLL register
+            let ppuscroll = memory.memory[0x2005];
+        } else if mirror_addr == 0x2006 {
+            // PPUADDR regsiter
+            let ppuaddr = memory.memory[0x2006];
+        } else if mirror_addr == 0x2007 {
+            // PPUDATA regsiter
+            let ppudata = memory.memory[0x2007];
+        } else if mirror_addr == 0x4014 {
+            // OAMDATA register
+            let oamdata = memory.memory[0x4014];
+        }
 
-        // PPUSTATUS register
-        let vblank = memory.memory[0x2002] & 0b10000000 == 0b10000000;
-        let sprite_0_hit = memory.memory[0x2002] & 0b1000000 == 0b1000000;
-        let sprite_overflow = memory.memory[0x2002] & 0b100000 == 0b100000;
-        
-        // OAMADDR register
-        let oamaddr = memory.memory[0x2003];
-
-        // OAMDATA register
-        let oamdata = memory.memory[0x2004];
-
-        // PPUSCROLL register
-        let ppuscroll = memory.memory[0x2005];
-
-        // PPUADDR regsiter
-        let ppuaddr = memory.memory[0x2006];
-
-        // PPUDATA regsiter
-        let ppudata = memory.memory[0x2007];
-
-        // OAMDATA register
-        let oamdata = memory.memory[0x4014];
+        ppu_cycle += 3;
     }
 
     println!("Exiting...");

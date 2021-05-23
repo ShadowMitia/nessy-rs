@@ -1,4 +1,4 @@
-use super::{instructions::InstructionName, AddressingMode, Registers, *};
+use super::{cpu::*, instructions::InstructionName};
 
 pub fn address_from_bytes(low_byte: u8, high_byte: u8) -> u16 {
     ((high_byte as u16) << 8) | low_byte as u16
@@ -14,6 +14,7 @@ pub fn get_operands(registers: &Registers, memory: &Memory) -> (u8, u8) {
     (low, high)
 }
 
+/// Test if addr1 and addr2 are on different 6502 pages
 pub fn is_page_crossed(addr1: u16, addr2: u16) -> bool {
     // println!(
     //     "page crossed {} ({:X} {:X} | {:X} {:X})",

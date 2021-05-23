@@ -2,7 +2,7 @@
 
 ## Usage (WIP)
 
-You can run the emulot and test it against nestest by running without argument
+You can run the emulator and test it against nestest by running without argument
 
 ```
 cargo run
