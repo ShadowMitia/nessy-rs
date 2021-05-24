@@ -6,7 +6,7 @@ pub mod mappers {
 
     use super::*;
 
-    pub fn load_rom(memory: &mut cpu::cpu::Memory, ppu_memory: &mut ppu::Memory, nesfile: &RomFile) {
+    pub fn load_rom(memory: &mut cpu::Memory, ppu_memory: &mut ppu::Memory, nesfile: &RomFile) {
         match nesfile {
             RomFile::Ines(nesfile, data) => match nesfile.mapper {
                 Mapper::Nrom => {

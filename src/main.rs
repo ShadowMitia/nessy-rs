@@ -6,9 +6,7 @@ use std::{
     time::Duration,
 };
 mod cpu;
-use cpu::{
-    cpu::Memory, cpu::Registers, cpu::*, instructions::*, utils::RESET_VECTOR_ADDRESS, utils::*,
-};
+use cpu::{instructions::*, *, utils::RESET_VECTOR_ADDRESS, utils::*, Memory, Registers};
 
 mod ppu;
 use ppu::{Memory as PPUMemory, Registers as PPURegisters, *};

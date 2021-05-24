@@ -1,4 +1,4 @@
-use super::{cpu::*, *};
+use super::{*, *};
 
 /// Represents the three letter name of an instruction
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
