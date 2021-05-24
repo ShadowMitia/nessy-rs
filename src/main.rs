@@ -4,18 +4,51 @@ use std::{
 };
 mod cpu;
 pub mod nessy;
-mod test_nestest;
 mod test_cpu;
+mod test_nestest;
+use bevy::{
+    asset::{AssetLoader, BoxedFuture, LoadContext, LoadedAsset},
+    prelude::*,
+    prelude::{App, IntoSystem},
+    reflect::TypeUuid,
+    DefaultPlugins,
+};
 use cpu::{instructions::*, utils::RESET_VECTOR_ADDRESS, utils::*, Memory, *};
 
 mod ppu;
 use nes_rom::RomFile;
-use ppu::{Memory as PPUMemory, *};
 
 use crate::nessy::Nessy;
-
 mod nes_rom;
 
+#[derive(TypeUuid)]
+#[uuid = "39cadc56-aa9c-4543-8640-a018b74b5052"]
+pub struct NESRomAsset {
+    pub rom: nes_rom::RomFile,
+}
+
+#[derive(Default)]
+pub struct NESRomAssetLoader;
+
+impl AssetLoader for NESRomAssetLoader {
+    fn load<'a>(
+        &'a self,
+        bytes: &'a [u8],
+        load_context: &'a mut LoadContext,
+    ) -> BoxedFuture<'a, Result<(), anyhow::Error>> {
+        Box::pin(async move {
+            let custom_asset = NESRomAsset {
+                rom: nes_rom::RomFile::new(bytes),
+            };
+            load_context.set_default_asset(LoadedAsset::new(custom_asset));
+            Ok(())
+        })
+    }
+
+    fn extensions(&self) -> &[&str] {
+        &["nes"]
+    }
+}
 
 fn main() {
     println!("Nessy 🐉!");
@@ -39,7 +72,15 @@ fn main() {
 
     nessy.load(&nesfile);
 
+    App::build()
+        .add_plugins(DefaultPlugins)
+        .add_asset::<NESRomAsset>()
+        .add_startup_system(setup.system())
+        .run();
+
     loop {
         nessy.execute();
     }
 }
+
+fn setup() {}
