@@ -5,8 +5,13 @@ use std::{
     thread::sleep,
     time::Duration,
 };
-mod rp2a03;
-use rp2a03::{instructions::*, utils::RESET_VECTOR_ADDRESS, utils::*, cpu::*};
+mod cpu;
+use cpu::{
+    cpu::Memory, cpu::Registers, cpu::*, instructions::*, utils::RESET_VECTOR_ADDRESS, utils::*,
+};
+
+mod ppu;
+use ppu::{Memory as PPUMemory, Registers as PPURegisters, *};
 
 mod nes_rom;
 
@@ -18,6 +23,14 @@ fn main() {
 
     // Initialise memory
     let mut memory = Memory::new();
+
+    // Set up registers
+    let mut registers = Registers::new();
+
+    // PPU
+
+    let mut ppu_registers = PPURegisters::new();
+    let mut ppu_memory = PPUMemory::new();
 
     let mut is_nestest = false;
     let nestest = include_bytes!("../nestest.nes");
@@ -52,7 +65,7 @@ fn main() {
     let mut nestest_output = File::create("nestest.log").unwrap();
 
     // Load up memory
-    nes_rom::mappers::load_rom(&mut memory, &nesfile);
+    nes_rom::mappers::load_rom(&mut memory, &mut ppu_memory, &nesfile);
 
     // let bank_seven = 16 + 7 * 16384;
 
@@ -68,17 +81,11 @@ fn main() {
 
     println!("Reset vector {:x}", reset_vector);
 
-    // Set up registers
-    let mut registers = Registers::new();
     if is_nestest {
         registers.pc = 0xC000; // Becasue nestest starts here
     } else {
         registers.pc = reset_vector;
     }
-
-    // POWER ON NES
-
-    // CPU
 
     if is_nestest {
         registers.status = 0x24;
@@ -98,32 +105,15 @@ fn main() {
     // Disable decimal mode
     registers.set_flag(StatusFlag::D, false);
 
-    // PPU
-
-    // Set PPUCTRL
-    memory.memory[0x2000] = 0x0;
-    // Set PPUMASK
-    memory.memory[0x2001] = 0x0;
-    // PPUSTATUS
-    memory.memory[0x2000] = 0b10100000;
-    // OAMADDR
-    memory.memory[0x2003] = 0x0;
-    // PPUSCROLL
-    memory.memory[0x2005] = 0x0;
-    // PPUADDR
-    memory.memory[0x2006] = 0x0;
-    // PPUDATA
-    memory.memory[0x2007] = 0x0;
-
     let reference = File::open("nestest_reference.log").unwrap();
     let reference_buffered = BufReader::new(reference);
     let mut reference_lines = reference_buffered.lines();
 
+    // NESTEST things
     let mut count = 0;
-
     let mut cycle = 7;
-
-    let mut ppu_cycle = 21;
+    let mut ppu_cycle = 21u32;
+    let mut frames = 0u32;
 
     loop {
         let byte = memory.memory[registers.pc as usize];
@@ -322,7 +312,7 @@ fn main() {
                 instr,
                 addressing_stuff,
                 registers.a, registers.x, registers.y, registers.status, memory.stack_pointer,
-                0,
+                frames,
                 ppu_cycle,
                 cycle,
             );
@@ -767,51 +757,44 @@ fn main() {
 
         // PPU
 
-        let get_oam_byte = |n: i32, m: i32| 4 * n + m;
+        for _ in 0..(new_cycles * 3) {
+            let get_oam_byte = |n: i32, m: i32| 4 * n + m;
 
-        if mirror_addr == 0x2000 {
-            // PPUCTRL register
-            let nmi_enable = memory.memory[0x2000] & 0b10000000 == 0b10000000;
-            let ppu_master_slave = memory.memory[0x2000] & 0b01000000 == 0b01000000;
-            let sprite_height = memory.memory[0x2000] & 0b00100000;
-            let background_tile_select = memory.memory[0x2000] & 0b00010000 == 0b00010000;
-            let sprite_tile_select = memory.memory[0x2000] & 0b00001000 == 0b00001000;
-            let increment_mode = memory.memory[0x2000] & 0b00000100 == 0b00000100;
-            let nametable_select = memory.memory[0x2000] & 0b11;
-        } else if mirror_addr == 0x2001 {
-            // PPUMASK register
-            let color_emphasis = (memory.memory[0x2001] & 0b11100000) >> 5;
-            let sprite_enable = memory.memory[0x2001] & 0b10000 == 0b10000;
-            let background_enable = memory.memory[0x2001] & 0b1000 == 0b1000;
-            let sprite_left_column_enable = memory.memory[0x2001] & 0b100 == 0b100;
-            let background_left_column_enable = memory.memory[0x2001] & 0b10 == 0b10;
-            let greyscale = memory.memory[0x2001] & 0b1 == 0b1;
-        } else if mirror_addr == 0x2002 {
-            // PPUSTATUS register
-            let vblank = memory.memory[0x2002] & 0b10000000 == 0b10000000;
-            let sprite_0_hit = memory.memory[0x2002] & 0b1000000 == 0b1000000;
-            let sprite_overflow = memory.memory[0x2002] & 0b100000 == 0b100000;
-        } else if mirror_addr == 0x2003 {
-            // OAMADDR register
-            let oamaddr = memory.memory[0x2003];
-        } else if mirror_addr == 0x2004 {
-            // OAMDATA register
-            let oamdata = memory.memory[0x2004];
-        } else if mirror_addr == 0x2005 {
-            // PPUSCROLL register
-            let ppuscroll = memory.memory[0x2005];
-        } else if mirror_addr == 0x2006 {
-            // PPUADDR regsiter
-            let ppuaddr = memory.memory[0x2006];
-        } else if mirror_addr == 0x2007 {
-            // PPUDATA regsiter
-            let ppudata = memory.memory[0x2007];
-        } else if mirror_addr == 0x4014 {
-            // OAMDATA register
-            let oamdata = memory.memory[0x4014];
+            if mirror_addr == 0x2000 {
+                // PPUCTRL register
+                ppu_registers.ctrl = Ctrl::new_from(memory.memory[0x2000]);
+            } else if mirror_addr == 0x2001 {
+                // PPUMASK register
+                ppu_registers.mask = Mask::new_from(memory.memory[0x2001]);
+            } else if mirror_addr == 0x2002 {
+                // PPUSTATUS register
+                ppu_registers.status = Status::new_from(memory.memory[0x2002]);
+            } else if mirror_addr == 0x2003 {
+                // OAMADDR register
+                let oamaddr = memory.memory[0x2003];
+            } else if mirror_addr == 0x2004 {
+                // OAMDATA register
+                let oamdata = memory.memory[0x2004];
+            } else if mirror_addr == 0x2005 {
+                // PPUSCROLL register
+                let ppuscroll = memory.memory[0x2005];
+            } else if mirror_addr == 0x2006 {
+                // PPUADDR regsiter
+                let ppuaddr = memory.memory[0x2006];
+            } else if mirror_addr == 0x2007 {
+                // PPUDATA register
+                let ppudata = memory.memory[0x2007];
+            } else if mirror_addr == 0x4014 {
+                // OAMDATA register
+                let oamdata = memory.memory[0x4014];
+            }
+
+            ppu_cycle += 1;
+            if ppu_cycle > 340 {
+                frames += 1;
+            }
+            ppu_cycle %= 341;
         }
-
-        ppu_cycle += 3;
     }
 
     println!("Exiting...");

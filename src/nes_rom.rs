@@ -6,7 +6,7 @@ pub mod mappers {
 
     use super::*;
 
-    pub fn load_rom(memory: &mut Memory, nesfile: &RomFile) {
+    pub fn load_rom(memory: &mut cpu::cpu::Memory, ppu_memory: &mut ppu::Memory, nesfile: &RomFile) {
         match nesfile {
             RomFile::Ines(nesfile, data) => match nesfile.mapper {
                 Mapper::Nrom => {
@@ -17,7 +17,7 @@ pub mod mappers {
                             ..16 + 16384 * (nesfile.num_prgrom) as usize],
                     );
 
-                    memory.ppu[0x0000..0x1FFF].copy_from_slice(
+                    ppu_memory.memory[0x0000..0x1FFF].copy_from_slice(
                         &data[(16 + 16384 * (nesfile.num_prgrom as usize) + 1)
                             ..(16
                                 + 16384 * (nesfile.num_prgrom as usize)
