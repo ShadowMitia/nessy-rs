@@ -17,13 +17,35 @@ pub mod mappers {
                             ..16 + 16384 * (nesfile.num_prgrom) as usize],
                     );
 
-                    ppu_memory.memory[0x0000..0x1FFF].copy_from_slice(
-                        &data[(16 + 16384 * (nesfile.num_prgrom as usize) + 1)
-                            ..(16
-                                + 16384 * (nesfile.num_prgrom as usize)
-                                + (nesfile.num_chrrom as usize) * 8192)
-                                as usize],
-                    )
+                    if nesfile.num_chrrom > 0 {
+                        ppu_memory.memory[0x0000..0x1FFF].copy_from_slice(
+                            &data[(16 + 16384 * (nesfile.num_prgrom as usize) + 1)
+                                ..(16
+                                    + 16384 * (nesfile.num_prgrom as usize)
+                                    + (nesfile.num_chrrom as usize) * 8192)
+                                    as usize],
+                        )
+                    }
+                }
+                Mapper::MMC1 => {
+                    // TODO: handle PRG RAM stuff
+
+                    memory.memory[0x8000..=0xBFFF].copy_from_slice(&data[16..16 + 16384]);
+
+                    memory.memory[0xC000..=0xFFFF].copy_from_slice(
+                        &data[(16 + 16384 * (nesfile.num_prgrom - 1) as usize)
+                            ..16 + 16384 * (nesfile.num_prgrom) as usize],
+                    );
+
+                    if nesfile.num_chrrom > 0 {
+                        ppu_memory.memory[0x0000..0x1FFF].copy_from_slice(
+                            &data[(16 + 16384 * (nesfile.num_prgrom as usize) + 1)
+                                ..(16
+                                    + 16384 * (nesfile.num_prgrom as usize)
+                                    + (nesfile.num_chrrom as usize) * 8192)
+                                    as usize],
+                        )
+                    }
                 }
                 Mapper::Unknown => panic!("Unknown mapper"),
             },
@@ -34,6 +56,7 @@ pub mod mappers {
     #[derive(PartialEq, Clone, Copy)]
     pub enum Mapper {
         Nrom,
+        MMC1,
         Unknown = u32::MAX,
     }
 
@@ -41,6 +64,7 @@ pub mod mappers {
         fn from(from: u8) -> Self {
             match from {
                 0 => Mapper::Nrom,
+                1 => Mapper::MMC1,
                 _ => Mapper::Unknown,
             }
         }

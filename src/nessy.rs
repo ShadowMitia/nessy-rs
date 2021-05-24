@@ -29,7 +29,7 @@ impl Nessy {
 
         let reset_vector = address_from_bytes(reset_vector_low, reset_vector_high);
 
-        memory.stack_pointer = 0xFD; // Stack is on page 1 only so 0xFF is actually 0x01FF
+        memory.stack_pointer = 0xFF; // Stack is on page 1 only so 0xFF is actually 0x01FF
 
         // Memory
         memory.memory[0x4017] = 0x00; // Frame IRQ enabled

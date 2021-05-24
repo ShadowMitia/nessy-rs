@@ -5,7 +5,7 @@ mod nestest {
     #[test]
     fn main() {
         let mut nessy = Nessy::new();
-        let nestest = include_bytes!("../test_roms/nes-test-roms-master/other/nestest.nes");
+        let nestest = include_bytes!("../test_roms/nestest.nes");
 
         // Load ROM and decode header
         let rom = nestest;
