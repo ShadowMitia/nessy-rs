@@ -1,7 +1,5 @@
 /*!  Emulate a Ricoh 2C02 microntroller used for PPU */
 
-use std::mem;
-
 pub struct Memory {
     pub memory: Vec<u8>,
     pub oam: Vec<u8>, // Object Attribute Memory

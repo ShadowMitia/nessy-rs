@@ -4,7 +4,7 @@ pub fn address_from_bytes(low_byte: u8, high_byte: u8) -> u16 {
     ((high_byte as u16) << 8) | low_byte as u16
 }
 
-pub const NMI_VECTOR_ADDRESS: u32 = 0xFFFA;
+// pub const NMI_VECTOR_ADDRESS: u32 = 0xFFFA;
 pub const RESET_VECTOR_ADDRESS: u32 = 0xFFFC;
 pub const BREAK_VECTOR_ADDDRESS: u32 = 0xFFFE;
 
@@ -379,12 +379,10 @@ pub fn apply_addressing(
             Some(addr as u16)
         }
         AddressingMode::ZeroPageIndexedWithX => {
-            let tmp = low_byte;
             let addr = low_byte.wrapping_add(registers.x);
             Some(addr as u16)
         }
         AddressingMode::ZeroPageIndexedWithY => {
-            let tmp = low_byte;
             let addr = low_byte.wrapping_add(registers.y);
             Some(addr as u16)
         }
